@@ -1,0 +1,53 @@
+# Java / Maven
+backend/target/
+backend/.mvn/wrapper/maven-wrapper.jar
+*.class
+*.jar
+*.war
+
+# Node / React
+frontend/node_modules/
+frontend/dist/
+
+# Python
+ia-service/__pycache__/
+ia-service/.pytest_cache/
+ia-service/.venv/
+ia-service/venv/
+ia-service/*.egg-info/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+ia-service/.env
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Test / coverage
+coverage/
+.coverage
+htmlcov/
+
+# Docker local volumes
+mysql_data/

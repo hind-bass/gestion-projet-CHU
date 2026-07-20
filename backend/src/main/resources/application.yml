@@ -1,0 +1,24 @@
+server:
+  port: ${SERVER_PORT:3000}
+
+spring:
+  application:
+    name: it-chu-manager
+  jpa:
+    open-in-view: false
+
+cors:
+  allowed-origins: ${CORS_ORIGIN:http://localhost:5173}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
