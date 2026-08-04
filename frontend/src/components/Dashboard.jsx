@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }) {
   // Données globales synthétiques
   const stats = {
     totalProjets: 4,
@@ -69,9 +69,14 @@ export default function Dashboard() {
         </span>
       </div>
 
-      {/* CARTE DES KPIS / INDICATEURS CLÉS */}
+      {/* CARTE DES KPIS / INDICATEURS CLÉS (CLIQUABLES) */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        
+        {/* Projets Actifs -> Redirige vers 'projects' */}
+        <div 
+          onClick={() => onNavigate && onNavigate('projects')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 hover:shadow-md transition-all active:scale-98"
+        >
           <p className="text-xs font-semibold text-slate-400 uppercase">Projets Actifs</p>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-bold text-slate-900">{stats.projetsEnCours}</span>
@@ -79,7 +84,11 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* Tâches Réalisées -> Redirige vers 'tasks' */}
+        <div 
+          onClick={() => onNavigate && onNavigate('tasks')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-emerald-500 hover:shadow-md transition-all active:scale-98"
+        >
           <p className="text-xs font-semibold text-slate-400 uppercase">Tâches Réalisées</p>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-bold text-emerald-600">{stats.tachesTerminees}</span>
@@ -87,20 +96,29 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* Avancement Global -> Redirige vers 'timeline' */}
+        <div 
+          onClick={() => onNavigate && onNavigate('timeline')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-blue-500 hover:shadow-md transition-all active:scale-98"
+        >
           <p className="text-xs font-semibold text-slate-400 uppercase">Avancement Global</p>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-bold text-blue-600">{stats.progressionGlobale}%</span>
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+        {/* Effectif Équipe IT -> Redirige vers 'team' */}
+        <div 
+          onClick={() => onNavigate && onNavigate('team')}
+          className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm cursor-pointer hover:border-indigo-500 hover:shadow-md transition-all active:scale-98"
+        >
           <p className="text-xs font-semibold text-slate-400 uppercase">Effectif Équipe IT</p>
           <div className="flex items-baseline gap-2 mt-2">
             <span className="text-2xl font-bold text-slate-900">{stats.membresActifs}</span>
             <span className="text-xs text-slate-500">collaborateurs</span>
           </div>
         </div>
+
       </div>
 
       {/* SECTION DOUBLE : SUIVI INDIVIDUEL + AVANCEMENT DES PROJETS */}
@@ -108,13 +126,25 @@ export default function Dashboard() {
 
         {/* 1. Suivi Individuel de l'Équipe */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <span>👥</span> Avancement Individuel
-          </h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>👥</span> Avancement Individuel
+            </h2>
+            <button 
+              onClick={() => onNavigate && onNavigate('team')}
+              className="text-xs text-blue-600 hover:underline font-semibold"
+            >
+              Gérer l'équipe ➔
+            </button>
+          </div>
 
           <div className="space-y-4 divide-y divide-slate-100">
             {teamPerformance.map((m) => (
-              <div key={m.id} className="pt-3 first:pt-0">
+              <div 
+                key={m.id} 
+                onClick={() => onNavigate && onNavigate('team')}
+                className="pt-3 first:pt-0 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors"
+              >
                 <div className="flex justify-between items-center mb-1">
                   <div>
                     <span className="font-semibold text-sm text-slate-800">{m.nom}</span>
@@ -141,13 +171,25 @@ export default function Dashboard() {
 
         {/* 2. Aperçu des Projets CHU */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <span>📁</span> Avancement des Projets
-          </h2>
+          <div className="flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+              <span>📁</span> Avancement des Projets
+            </h2>
+            <button 
+              onClick={() => onNavigate && onNavigate('projects')}
+              className="text-xs text-blue-600 hover:underline font-semibold"
+            >
+              Voir les projets ➔
+            </button>
+          </div>
 
           <div className="space-y-4 divide-y divide-slate-100">
             {projectsOverview.map((p) => (
-              <div key={p.code} className="pt-3 first:pt-0">
+              <div 
+                key={p.code} 
+                onClick={() => onNavigate && onNavigate('projects')}
+                className="pt-3 first:pt-0 cursor-pointer hover:bg-slate-50 p-1.5 rounded-lg transition-colors"
+              >
                 <div className="flex justify-between items-center mb-1">
                   <div>
                     <span className="text-xs font-mono font-bold text-blue-600 mr-2">{p.code}</span>
