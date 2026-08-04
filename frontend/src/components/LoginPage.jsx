@@ -6,7 +6,6 @@ export default function LoginPage({ onLoginSuccess }) {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Logo CHU
   const logoUrl = "/chu-logo.png";
 
   const handleChange = (e) => {
@@ -20,17 +19,38 @@ export default function LoginPage({ onLoginSuccess }) {
 
     try {
       if (credentials.email && credentials.password) {
-        const userAdmin = {
-          id: 1,
-          nom: 'El Amrani',
-          prenom: 'Karim',
-          email: credentials.email,
-          role: 'ADMIN',
-          title: 'Chef de Service Informatique',
-          service: "Direction des Systèmes d'Information (CHU)"
-        };
-        localStorage.setItem('token', 'fake-jwt-token-admin');
-        onLoginSuccess(userAdmin);
+        const emailLower = credentials.email.toLowerCase();
+
+        // Détection de l'Admin ou du Membre de l'équipe
+        let authenticatedUser;
+
+        if (emailLower.includes('admin')) {
+          // Profil Administrateur
+          authenticatedUser = {
+            id: 1,
+            nom: 'El Amrani',
+            prenom: 'Karim',
+            email: credentials.email,
+            role: 'ADMIN',
+            title: 'Chef de Service Informatique',
+            service: "Direction des Systèmes d'Information (CHU)"
+          };
+          localStorage.setItem('token', 'fake-jwt-token-admin');
+        } else {
+          // Profil Membre d'équipe (User)
+          authenticatedUser = {
+            id: 2,
+            nom: 'Alami',
+            prenom: 'Youssef',
+            email: credentials.email,
+            role: 'USER',
+            title: 'Ingénieur Réseaux & Systèmes',
+            service: "Service Infrastructure IT (CHU)"
+          };
+          localStorage.setItem('token', 'fake-jwt-token-user');
+        }
+
+        onLoginSuccess(authenticatedUser);
       } else {
         setError('Veuillez saisir des identifiants valides.');
       }
@@ -44,17 +64,16 @@ export default function LoginPage({ onLoginSuccess }) {
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-teal-50 via-sky-50 to-emerald-100 flex items-center justify-center p-4 relative overflow-hidden">
       
-      {/* Halos décoratifs thème Santé / Médical */}
+      {/* Halos décoratifs Thème Santé */}
       <div className="absolute top-[-10%] left-[-10%] w-96 h-96 bg-teal-200/40 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-[-10%] right-[-10%] w-96 h-96 bg-sky-200/40 rounded-full blur-3xl pointer-events-none" />
 
       {/* Carte de Connexion */}
       <div className="relative z-10 max-w-md w-full bg-white/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-teal-100 overflow-hidden">
         
-        {/* En-tête de la carte */}
+        {/* En-tête */}
         <div className="bg-gradient-to-r from-teal-800 to-sky-900 p-6 text-white text-center border-b border-teal-700/50 flex flex-col items-center">
           
-          {/* Logo du CHU */}
           <div className="w-24 h-24 rounded-full bg-white p-1.5 mb-3 shadow-xl ring-4 ring-teal-400/30 flex items-center justify-center overflow-hidden shrink-0">
             <img 
               src={logoUrl} 
@@ -90,13 +109,13 @@ export default function LoginPage({ onLoginSuccess }) {
                 required
                 value={credentials.email}
                 onChange={handleChange}
-                placeholder="nom.prenom@chu.ma"
+                placeholder="prenom.nom@chu.ma"
                 className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all"
               />
             </div>
           </div>
 
-          {/* Champ Mot de passe avec bouton Œil */}
+          {/* Champ Mot de passe */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Mot de passe
@@ -123,7 +142,7 @@ export default function LoginPage({ onLoginSuccess }) {
             </div>
           </div>
 
-          {/* Bouton de Soumission */}
+          {/* Bouton de Connexion */}
           <button
             type="submit"
             disabled={loading}
