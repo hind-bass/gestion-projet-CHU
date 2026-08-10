@@ -1,12 +1,45 @@
 import React, { useState } from 'react';
 
-export default function TranscriptProcessor() {
-  const [selectedProject, setSelectedProject] = useState('PRJ-CHU-01');
+// Icônes SVG
+const CpuIcon = () => (
+  <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+  </svg>
+);
+
+const RocketIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+  </svg>
+);
+
+const CheckCircleIcon = () => (
+  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+);
+
+const TrashIcon = () => (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+  </svg>
+);
+
+const FASTAPI_URL = 'http://localhost:8000';
+
+export default function TranscriptProcessor({
+  projects = [
+    { id: 'PRJ-CHU-01', name: 'PRJ-CHU-01 (Refonte SI Hospitalier)' },
+    { id: 'PRJ-CHU-02', name: 'PRJ-CHU-02 (Dossier Patient)' }
+  ],
+  onSendToValidation
+}) {
+  const [selectedProject, setSelectedProject] = useState(projects[0]?.id || 'PRJ-CHU-01');
   const [transcriptText, setTranscriptText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  // Exemple de texte de démonstration à charger rapidement
   const sampleTranscript = `Réunion du 25 juillet 2026 - Projet Refonte SI Hospitalier
 Participants: Chef de service IT, Youssef Alami, Sanaa Chraibi
 
@@ -15,203 +48,304 @@ Youssef: Le réseau est prêt mais il faut mettre à niveau le pare-feu avant d'
 Sanaa: Côté base de données, l'API du dossier patient a besoin de tests de charge. Je propose de m'en charger cette semaine.
 Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins avec Omar. On valide ce plan.`;
 
-  // Déclenchement du Pipeline IA (Simulation d'analyse NLP/LLM)
-  const handleProcessTranscript = () => {
-    if (!transcriptText.trim()) {
-      alert("Veuillez saisir ou coller une transcription avant de lancer le traitement IA.");
-      return;
-    }
+  // Appels vers FastAPI endpoint /api/ai/meetings/process
+  const handleProcessTranscript = async () => {
+    if (!transcriptText.trim()) return;
 
     setIsProcessing(true);
     setAnalysisResult(null);
+    setErrorMessage('');
 
-    // Simulation du temps de traitement du pipeline IA
-    setTimeout(() => {
-      setIsProcessing(false);
-      setAnalysisResult({
-        resume: "La réunion a porté sur la préparation de la migration des serveurs du bloc opératoire. Le réseau est prêt et les actions prioritaires sur le pare-feu et la BDD ont été validées.",
-        decisions: [
-          "Mise à niveau du pare-feu validée avant la pose des switchs.",
-          "Exécution des tests de charge sur l'API Dossier Patient accordée pour cette semaine."
-        ],
-        tachesExtraites: [
-          {
-            id: 1,
-            titre: "Mise à niveau du pare-feu du bloc opératoire",
-            assigneA: "Youssef Alami",
-            priorite: "HAUTE",
-            dateEcheance: "2026-08-05",
-            competences: ["Réseau", "Sécurité"]
-          },
-          {
-            id: 2,
-            titre: "Tests de charge API Dossier Patient",
-            assigneA: "Sanaa Chraibi",
-            priorite: "HAUTE",
-            dateEcheance: "2026-08-01",
-            competences: ["React", "API", "Spring Boot"]
-          },
-          {
-            id: 3,
-            titre: "Validation des droits d'accès BDD médecins avec Omar",
-            assigneA: "Sanaa Chraibi",
-            priorite: "MOYENNE",
-            dateEcheance: "2026-08-03",
-            competences: ["Base de données"]
-          }
-        ]
+    try {
+      const response = await fetch(`${FASTAPI_URL}/api/ai/meetings/process`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcription: transcriptText
+        })
       });
-    }, 2000);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Erreur serveur FastAPI (${response.status})`);
+      }
+
+      const data = await response.json();
+      setAnalysisResult(data);
+    } catch (err) {
+      console.error("Erreur lors de l'appel FastAPI :", err);
+      setErrorMessage(err.message || "Impossible de joindre le service d'analyse FastAPI.");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleSendToValidationModule = () => {
+    if (!analysisResult?.suggested_tasks) return;
+    if (onSendToValidation) {
+      onSendToValidation(analysisResult.suggested_tasks);
+    } else {
+      alert(`${analysisResult.suggested_tasks.length} tâche(s) envoyée(s) au module de validation IA avec succès !`);
+    }
+  };
+
+  const getPriorityBadgeStyle = (priority) => {
+    switch (priority?.toUpperCase()) {
+      case 'HAUTE':
+      case 'HIGH':
+        return 'bg-amber-100 text-amber-800 border-amber-200';
+      case 'MOYENNE':
+      case 'MEDIUM':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 text-slate-800">
       {/* En-tête de section */}
-      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+      <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl font-bold text-slate-900">Traitement IA des Transcriptions</h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Importez les verbatims de réunion pour générer résumés, décisions et tâches structurées via IA.
+          <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+            <CpuIcon /> Traitement IA des Transcriptions
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Analysez les comptes-rendus ou verbatims de réunion pour extraire automatiquement résumés, décisions et tâches structurées.
           </p>
         </div>
-        <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200 flex items-center gap-1.5">
-          <span>🤖</span> Pipeline Ollama / LLM
+        <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200 flex items-center gap-1.5 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-indigo-600 animate-pulse" /> FastAPI + Ollama/LLM
         </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* BLOC GAUCHE : Saisie / Import de la Transcription */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-sm font-bold text-slate-800">1. Saisie ou Import du Verbatim</h2>
-            <button
-              onClick={() => setTranscriptText(sampleTranscript)}
-              className="text-xs text-blue-600 hover:text-blue-800 font-semibold underline"
-            >
-              Insérer un exemple
-            </button>
-          </div>
+        {/* BLOC GAUCHE : Saisie / Import */}
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+              <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                1. Verbatim de Réunion
+              </h2>
+              <div className="flex items-center gap-2">
+                {transcriptText && (
+                  <button
+                    onClick={() => setTranscriptText('')}
+                    className="text-xs text-slate-400 hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Effacer le texte"
+                  >
+                    <TrashIcon /> Effacer
+                  </button>
+                )}
+                <button
+                  onClick={() => setTranscriptText(sampleTranscript)}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline transition-colors cursor-pointer"
+                >
+                  Charger un exemple
+                </button>
+              </div>
+            </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Projet cible</label>
-            <select
-              value={selectedProject}
-              onChange={(e) => setSelectedProject(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium"
-            >
-              <option value="PRJ-CHU-01">PRJ-CHU-01 (Refonte SI Hospitalier)</option>
-              <option value="PRJ-CHU-02">PRJ-CHU-02 (Dossier Patient)</option>
-            </select>
-          </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1">
+                Projet associé
+              </label>
+              <select
+                value={selectedProject}
+                onChange={(e) => setSelectedProject(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Transcription brute</label>
-            <textarea
-              rows="10"
-              placeholder="Collez ici le texte de la transcription de réunion..."
-              value={transcriptText}
-              onChange={(e) => setTranscriptText(e.target.value)}
-              className="w-full p-3 border border-slate-300 rounded-lg text-xs font-mono focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-            />
+            <div>
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-xs font-medium text-slate-600">
+                  Transcription brute
+                </label>
+                <span className="text-[10px] text-slate-400 font-mono">
+                  {transcriptText.length} caractères
+                </span>
+              </div>
+              <textarea
+                rows="11"
+                placeholder="Collez ici le texte de la transcription de réunion (ex: compte-rendu Teams, notes d'entretien, enregistrement transcrit)..."
+                value={transcriptText}
+                onChange={(e) => setTranscriptText(e.target.value)}
+                className="w-full p-3 border border-slate-300 rounded-lg text-xs font-mono leading-relaxed focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-y"
+              />
+            </div>
           </div>
 
           <button
             onClick={handleProcessTranscript}
             disabled={isProcessing || !transcriptText.trim()}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg text-sm transition-colors flex justify-center items-center gap-2 shadow-sm"
+            className="w-full mt-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-2.5 rounded-lg text-xs transition-colors flex justify-center items-center gap-2 shadow-sm cursor-pointer"
           >
             {isProcessing ? (
               <>
-                <span className="animate-spin">⏳</span> Traitement du pipeline IA en cours...
+                <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Traitement NLP via FastAPI...</span>
               </>
             ) : (
               <>
-                <span>🚀</span> Déclencher le Traitement IA
+                <RocketIcon />
+                <span>Lancer l'Analyse IA</span>
               </>
             )}
           </button>
         </div>
 
-        {/* BLOC DROITE : Résultats de l'analyse IA */}
+        {/* BLOC DROITE : Résultats */}
         <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-          <h2 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2">
-            2. Résultats de l'Analyse IA
+          <h2 className="text-xs font-bold text-slate-800 uppercase tracking-wider pb-2 border-b border-slate-100">
+            2. Extractions IA
           </h2>
 
-          {!analysisResult && !isProcessing && (
-            <div className="h-64 flex flex-col items-center justify-center text-slate-400 text-xs italic border-2 border-dashed border-slate-200 rounded-lg">
-              <span>🧠 Aucun traitement lancé.</span>
-              <span className="mt-1">Importez un texte et cliquez sur "Déclencher le Traitement IA".</span>
+          {errorMessage && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
+              ⚠️ Impossible de joindre le service d'analyse FastAPI.
+            </div>
+          )}
+
+          {!analysisResult && !isProcessing && !errorMessage && (
+            <div className="h-80 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-6 border-2 border-dashed border-slate-200 rounded-lg">
+              <CpuIcon />
+              <p className="font-semibold mt-2 text-slate-600">Aucune analyse disponible</p>
+              <p className="mt-1 text-slate-400 max-w-xs">
+                Saisissez ou chargez une transcription à gauche puis cliquez sur "Lancer l'Analyse IA".
+              </p>
             </div>
           )}
 
           {isProcessing && (
-            <div className="h-64 flex flex-col items-center justify-center space-y-3 text-indigo-600">
-              <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-              <p className="text-xs font-semibold">Extraction du résumé, des décisions et des tâches...</p>
+            <div className="h-80 flex flex-col items-center justify-center space-y-3 text-indigo-600">
+              <div className="w-10 h-10 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+              <div className="text-center">
+                <p className="text-xs font-bold text-slate-700">Extraction structurée en cours...</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Analyse par le serveur FastAPI (Résumé, Décisions et Tâches)
+                </p>
+              </div>
             </div>
           )}
 
           {analysisResult && (
-            <div className="space-y-4 animate-fadeIn">
-              
+            <div className="space-y-4 text-xs">
+              {/* Intervenants détectés (si présents) */}
+              {analysisResult.speakers && analysisResult.speakers.length > 0 && (
+                <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                  <span className="font-bold text-slate-700">👥 Intervenants :</span>
+                  {analysisResult.speakers.map((s, idx) => (
+                    <span key={idx} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-medium border border-slate-200">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {/* Résumé */}
-              <div className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-100">
-                <p className="text-xs font-bold text-indigo-900 mb-1">📝 Résumé Automatique :</p>
-                <p className="text-xs text-indigo-800 leading-relaxed">{analysisResult.resume}</p>
+              <div className="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-100 space-y-1">
+                <p className="font-bold text-indigo-950 flex items-center gap-1.5">
+                  📝 Résumé Synthétique :
+                </p>
+                <p className="text-indigo-900 leading-relaxed text-[11px]">
+                  {analysisResult.summary}
+                </p>
               </div>
 
               {/* Décisions Clés */}
-              <div>
-                <p className="text-xs font-bold text-slate-700 mb-1">🎯 Décisions Identifiées :</p>
-                <ul className="list-disc list-inside text-xs text-slate-600 space-y-1 pl-1">
-                  {analysisResult.decisions.map((d, i) => (
-                    <li key={i}>{d}</li>
-                  ))}
-                </ul>
+              <div className="space-y-1.5">
+                <p className="font-bold text-slate-800">🎯 Décisions Validées :</p>
+                {analysisResult.decisions?.length > 0 ? (
+                  <ul className="space-y-1 pl-1">
+                    {analysisResult.decisions.map((d, i) => (
+                      <li key={i} className="flex items-start gap-2 text-slate-600 text-[11px]">
+                        <span className="text-indigo-600 font-bold">•</span>
+                        <span>{d}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-slate-400 italic text-[11px]">Aucune décision explicite identifiée.</p>
+                )}
               </div>
 
               {/* Tâches Extraites */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <p className="text-xs font-bold text-slate-700">
-                    ☑️ Tâches Réduites / Extraites ({analysisResult.tachesExtraites.length}) :
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex justify-between items-center">
+                  <p className="font-bold text-slate-800">
+                    ☑️ Tâches Identifiées ({analysisResult.suggested_tasks?.length || 0})
                   </p>
-                  <button 
-                    onClick={() => alert("Les tâches ont été enregistrées avec succès dans le projet !")}
-                    className="text-[11px] font-bold bg-emerald-600 text-white px-2.5 py-1 rounded hover:bg-emerald-700 transition-colors"
+                  <button
+                    onClick={handleSendToValidationModule}
+                    className="text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                   >
-                    + Valider & Injecter les tâches
+                    <CheckCircleIcon /> Envoyer pour Validation
                   </button>
                 </div>
 
                 <div className="space-y-2">
-                  {analysisResult.tachesExtraites.map((t) => (
-                    <div key={t.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-center">
-                      <div>
-                        <p className="text-xs font-semibold text-slate-800">{t.titre}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-medium">
-                            👤 {t.assigneA}
-                          </span>
-                          <span className="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
-                            📅 {t.dateEcheance}
+                  {analysisResult.suggested_tasks?.map((t, index) => (
+                    <div
+                      key={t.id || index}
+                      className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-2 hover:border-slate-300 transition-all"
+                    >
+                      <div className="flex justify-between items-start gap-2">
+                        <p className="font-semibold text-slate-900 text-xs">{t.title}</p>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {t.confidence && (
+                            <span className="text-[9px] font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                              {t.confidence}%
+                            </span>
+                          )}
+                          <span
+                            className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${getPriorityBadgeStyle(
+                              t.priority
+                            )}`}
+                          >
+                            {t.priority}
                           </span>
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                        {t.priorite}
-                      </span>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
+                        <div className="flex items-center gap-3">
+                          <span>
+                            👤 <strong className="text-slate-700">{t.assignee || 'Non assigné'}</strong>
+                          </span>
+                          <span>
+                            📅 <strong className="text-slate-700">{t.due_date || 'Non définie'}</strong>
+                          </span>
+                        </div>
+
+                        {t.skills && t.skills.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {t.skills.map((c, i) => (
+                              <span
+                                key={i}
+                                className="bg-white border border-slate-200 text-slate-600 px-1.5 py-0.2 rounded font-mono text-[9px]"
+                              >
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-
             </div>
           )}
         </div>
-
       </div>
     </div>
   );
