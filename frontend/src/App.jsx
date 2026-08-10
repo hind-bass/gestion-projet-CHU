@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 // Composants communs
 import LoginPage from './components/LoginPage';
@@ -35,12 +35,30 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
+  // État partagé pour faire circuler les tâches extraites du transcript vers la validation
+  const [pendingAITasks, setPendingAITasks] = useState([]);
+
   // Gestion de la déconnexion
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     setCurrentUser(null);
     setActiveTab('dashboard');
   };
+
+  // Récupération automatique de la session utilisateur au démarrage
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    if (savedUser && token) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error("Erreur lors de la lecture de la session :", err);
+        handleLogout();
+      }
+    }
+  }, []);
 
   // Redirection vers la page de Login si aucun utilisateur n'est connecté
   if (!currentUser) {
@@ -48,14 +66,83 @@ export default function App() {
       <LoginPage 
         onLoginSuccess={(user) => {
           setCurrentUser(user);
+          localStorage.setItem('user', JSON.stringify(user));
           setActiveTab('dashboard');
         }} 
       />
     );
   }
 
-  // Vérification du rôle de l'utilisateur
   const isAdmin = currentUser.role === 'ADMIN';
+
+  // Rendu dynamique des vues Administrateur
+  const renderAdminView = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <Dashboard onNavigate={(tab) => setActiveTab(tab)} />;
+      case 'kanban':
+        return <KanbanBoard />;
+      case 'projects':
+        return <ProjectManagement />;
+      case 'team':
+        return <TeamManagement />;
+      case 'tasks':
+        return <TaskManagement />;
+      case 'logs':
+        return <AuditLogs />;
+      case 'timeline':
+      case 'planning':
+      case 'chronologie':
+        return <TimelinePlanning />;
+      case 'chat':
+      case 'chatbot':
+      case 'assistant':
+        return <AIAssistantChat />;
+      case 'meetings':
+        return (
+          <div className="space-y-8">
+            <MeetingPlanner />
+            <div className="border-t border-slate-200 pt-8">
+              <TranscriptProcessor 
+                onSendToValidation={(tasks) => setPendingAITasks(tasks)} 
+              />
+            </div>
+            <div className="border-t border-slate-200 pt-8">
+              <AITaskValidation 
+                initialTasks={pendingAITasks} 
+              />
+            </div>
+          </div>
+        );
+      default:
+        return <Dashboard onNavigate={(tab) => setActiveTab(tab)} />;
+    }
+  };
+
+  // Rendu dynamique des vues Membre de l'équipe
+  const renderUserView = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <UserDashboard user={currentUser} onNavigate={(tab) => setActiveTab(tab)} />;
+      case 'projects':
+        return <UserProjects user={currentUser} />;
+      case 'tasks':
+      case 'kanban':
+        return <UserTasks user={currentUser} />;
+      case 'meetings':
+        return <UserMeetings user={currentUser} />;
+      case 'workload':
+        return <UserWorkload user={currentUser} />;
+      case 'notifications':
+        return <UserNotifications user={currentUser} />;
+      case 'chatbot':
+      case 'assistant':
+      case 'chat':
+        return <UserChatbot user={currentUser} />;
+      default:
+        return <UserDashboard user={currentUser} onNavigate={(tab) => setActiveTab(tab)} />;
+    }
+  };
 
   return (
     <>
@@ -68,36 +155,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileOpen(true)}
           onLogout={handleLogout}
         >
-          {/* TRANSMISSION DE LA NAVIGATION AU DASHBOARD ADMIN */}
-          {activeTab === 'dashboard' && (
-            <Dashboard onNavigate={(tab) => setActiveTab(tab)} />
-          )}
-          
-          {activeTab === 'kanban' && <KanbanBoard />}
-          {activeTab === 'projects' && <ProjectManagement />}
-          {activeTab === 'team' && <TeamManagement />}
-          {activeTab === 'tasks' && <TaskManagement />}
-          {activeTab === 'logs' && <AuditLogs />}
-
-          {(activeTab === 'timeline' || activeTab === 'planning' || activeTab === 'chronologie') && (
-            <TimelinePlanning />
-          )}
-          
-          {(activeTab === 'chat' || activeTab === 'chatbot' || activeTab === 'assistant') && (
-            <AIAssistantChat />
-          )}
-
-          {activeTab === 'meetings' && (
-            <div className="space-y-8">
-              <MeetingPlanner />
-              <div className="border-t border-slate-200 pt-8">
-                <TranscriptProcessor />
-              </div>
-              <div className="border-t border-slate-200 pt-8">
-                <AITaskValidation />
-              </div>
-            </div>
-          )}
+          {renderAdminView()}
         </AdminLayout>
       ) : (
         /* ================= ESPACE MEMBRE D'ÉQUIPE (USER) ================= */
@@ -108,22 +166,7 @@ export default function App() {
           onOpenProfile={() => setIsProfileOpen(true)}
           onLogout={handleLogout}
         >
-          {activeTab === 'dashboard' && (
-            <UserDashboard 
-              user={currentUser} 
-              onNavigate={(tab) => setActiveTab(tab)} 
-            />
-          )}
-
-          {activeTab === 'projects' && <UserProjects user={currentUser} />}
-          {(activeTab === 'tasks' || activeTab === 'kanban') && <UserTasks user={currentUser} />}
-          {activeTab === 'meetings' && <UserMeetings user={currentUser} />}
-          {activeTab === 'workload' && <UserWorkload user={currentUser} />}
-          {activeTab === 'notifications' && <UserNotifications user={currentUser} />}
-
-          {(activeTab === 'chatbot' || activeTab === 'assistant' || activeTab === 'chat') && (
-            <UserChatbot user={currentUser} />
-          )}
+          {renderUserView()}
         </UserLayout>
       )}
 
@@ -132,7 +175,11 @@ export default function App() {
         <ProfileModal 
           user={currentUser} 
           onClose={() => setIsProfileOpen(false)}
-          onUpdateProfile={(updatedData) => setCurrentUser({ ...currentUser, ...updatedData })}
+          onUpdateProfile={(updatedData) => {
+            const updatedUser = { ...currentUser, ...updatedData };
+            setCurrentUser(updatedUser);
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+          }}
         />
       )}
     </>
