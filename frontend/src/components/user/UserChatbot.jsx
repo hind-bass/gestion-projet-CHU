@@ -1,19 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+
 export default function UserChatbot({ user }) {
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'bot',
-      text: `Bonjour ! Je suis votre assistant DSI contextuel. Je suis connecté à vos projets (*Refonte SI Hospitalier*, *Déploiement Réseau CHU*, *Sécurisation DSI & Logs*). Comment puis-je vous aider aujourd'hui ?`,
-      time: '11:00'
+      text: `Bonjour ! Je suis votre assistant DSI contextuel. Je suis connecté à vos projets. Comment puis-je vous aider aujourd'hui ?`,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Défilement automatique vers le dernier message
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -22,7 +23,6 @@ export default function UserChatbot({ user }) {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  // Suggestions de questions rapides
   const quickPrompts = [
     "Quelles sont mes tâches prioritaires cette semaine ?",
     "Résumé de la dernière réunion SI Hospitalier",
@@ -30,10 +30,9 @@ export default function UserChatbot({ user }) {
     "Règles d'accès pour les switches Cisco ?"
   ];
 
-  // Simulation de réponse de l'assistant IA
-  const handleSendMessage = (textToSend) => {
-    const text = textToSend || inputMessage;
-    if (!text.trim()) return;
+  const handleSendMessage = async (textToSend) => {
+    const text = (typeof textToSend === 'string' ? textToSend : inputMessage).trim();
+    if (!text || isTyping) return;
 
     const userMsg = {
       id: Date.now(),
@@ -43,39 +42,59 @@ export default function UserChatbot({ user }) {
     };
 
     setMessages((prev) => [...prev, userMsg]);
-    if (!textToSend) setInputMessage('');
+    setInputMessage('');
     setIsTyping(true);
 
-    // Simulation de réponse intelligente basée sur le contexte utilisateur
-    setTimeout(() => {
-      let botResponse = "Je n'ai pas trouvé de directive spécifique à ce sujet dans la documentation de vos projets actuels.";
+    try {
+      // 1. URL alignée avec la route FastAPI (/api/ai/chat/)
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // 2. Payload JSON strictement conforme au schéma ChatRequest (Pydantic)
+        body: JSON.stringify({
+          user_id: user?.id ? parseInt(user.id, 10) : 1, // Entier obligatoire (int)
+          role: user?.role === 'ADMIN' ? 'ADMIN' : 'MEMBRE', // Chaîne "ADMIN" ou "MEMBRE"
+          question: text // Requis par Pydantic au lieu de "message"
+        }),
+      });
 
-      const lower = text.toLowerCase();
-      if (lower.includes('tâche') || lower.includes('prioritaire') || lower.includes('urgente')) {
-        botResponse = "D'après votre tableau Kanban, vous avez 1 tâche urgente en attente :\n- **Mise à jour des patchs de sécurité des serveurs Web** (Échéance: 03 Août 2026).\n\nVous avez également 1 tâche en cours : *Configuration des VLANs - Bâtiment Chirurgie*.";
-      } else if (lower.includes('réunion') || lower.includes('compte rendu') || lower.includes('résumé')) {
-        botResponse = "Le dernier compte rendu concerne la **Revue d'Architecture & Bilan Sprint 2** (28 Juillet 2026).\n\n**Décisions clés :**\n- Passage en production de la v1.4 validé.\n- Accord pour l'outil de monitoring centralisé.";
-      } else if (lower.includes('charge') || lower.includes('disponibilité') || lower.includes('heure')) {
-        botResponse = "Votre charge de travail est actuellement de **31h / 35h** (88% de capacité). Il vous reste **4 heures de disponibilité** sur la semaine en cours.";
-      } else if (lower.includes('vlan') || lower.includes('cisco') || lower.includes('réseau')) {
-        botResponse = "Extrait de la documentation *Déploiement Réseau CHU* :\n- Les switches du 2ème étage doivent isoler le flux vidéo (VLAN 20) du flux DSI Patients (VLAN 10).\n- La passerelle par défaut est `10.200.4.1`.";
+      if (!response.ok) {
+        throw new Error(`Erreur serveur (${response.status})`);
       }
+
+      // 3. Réception de la réponse ChatResponse { answer, sources_count }
+      const data = await response.json();
 
       const botMsg = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: botResponse,
+        text: data.answer || "Aucune réponse reçue de l'assistant.",
+        sourcesCount: data.sources_count, // Récupération du nombre de sources consultées
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
 
       setMessages((prev) => [...prev, botMsg]);
+
+    } catch (error) {
+      console.error("Erreur Chatbot FastAPI :", error);
+      
+      const errorMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: "⚠️ Désolé, je n'ai pas pu contacter le service IA. Vérifiez que votre serveur FastAPI est opérationnel.",
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   return (
     <div className="space-y-4">
-      
       {/* En-tête Assistant */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -92,7 +111,7 @@ export default function UserChatbot({ user }) {
         </div>
 
         <span className="hidden sm:inline-block text-[11px] font-mono bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg border border-slate-200">
-          Modèle: LLM Local / RAG restreint
+          FastAPI / RAG Local
         </span>
       </div>
 
@@ -113,10 +132,18 @@ export default function UserChatbot({ user }) {
                     : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none'
                 }`}
               >
-                {/* Rendu simple avec sauts de ligne */}
                 <div className="whitespace-pre-line font-medium">
                   {msg.text}
                 </div>
+
+                {/* Indicateur optionnel du nombre de sources RAG consultées */}
+                {msg.sender === 'bot' && msg.sourcesCount !== undefined && (
+                  <div className="mt-2 text-[10px] text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-md w-fit font-sans flex items-center gap-1">
+                    <span>📚</span>
+                    <span>{msg.sourcesCount} source(s) BDD consultée(s)</span>
+                  </div>
+                )}
+
                 <div
                   className={`text-[9px] mt-1.5 text-right font-mono ${
                     msg.sender === 'user' ? 'text-teal-200' : 'text-slate-400'
@@ -128,14 +155,14 @@ export default function UserChatbot({ user }) {
             </div>
           ))}
 
-          {/* Animation chargement IA */}
+          {/* Animation de chargement */}
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3.5 text-xs text-slate-400 flex items-center gap-2">
                 <span className="animate-bounce">●</span>
                 <span className="animate-bounce [animation-delay:0.2s]">●</span>
                 <span className="animate-bounce [animation-delay:0.4s]">●</span>
-                <span className="text-[11px] font-medium text-slate-500 ml-1">L'assistant recherche dans la documentation...</span>
+                <span className="text-[11px] font-medium text-slate-500 ml-1">L'assistant interroge FastAPI / LLM...</span>
               </div>
             </div>
           )}
@@ -149,7 +176,8 @@ export default function UserChatbot({ user }) {
             <button
               key={idx}
               onClick={() => handleSendMessage(prompt)}
-              className="text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 border border-slate-200 rounded-full px-3 py-1 shrink-0 transition-colors"
+              disabled={isTyping}
+              className="text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 border border-slate-200 rounded-full px-3 py-1 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
             >
               💡 {prompt}
             </button>
@@ -174,7 +202,7 @@ export default function UserChatbot({ user }) {
           <button
             type="submit"
             disabled={!inputMessage.trim() || isTyping}
-            className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-1.5"
+            className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>Envoyer</span>
             <span>➔</span>
@@ -182,7 +210,6 @@ export default function UserChatbot({ user }) {
         </form>
 
       </div>
-
     </div>
   );
 }
