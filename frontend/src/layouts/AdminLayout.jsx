@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-export default function AdminLayout({ children, user, activeTab, setActiveTab, onOpenProfile, onLogout }) {
-  // États pour les éléments interactifs de la Topbar
+export default function AdminLayout({
+  children,
+  user,
+  activeTab,
+  setActiveTab,
+  onOpenProfile,
+  onLogout
+}) {
+  // États de la Topbar
   const [selectedProject, setSelectedProject] = useState('Refonte SI Hospitalier');
   const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
 
-  // État pour la modal d'envoi de notification
+  // État de la Modal
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
-  // Liste factice des membres IT ciblables
+  // Refs pour la détection du clic extérieur (Click Outside)
+  const notificationRef = useRef(null);
+  const projectDropdownRef = useRef(null);
+
+  // Liste factice des membres IT
   const teamMembers = [
     { id: 1, nom: 'Alami', prenom: 'Youssef' },
     { id: 2, nom: 'Chraibi', prenom: 'Sanaa' },
@@ -19,7 +30,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
 
   // Formulaire d'envoi de notification
   const [newNotification, setNewNotification] = useState({
-    recipientId: 'all', // 'all' ou ID d'un membre
+    recipientId: 'all',
     title: '',
     message: ''
   });
@@ -32,7 +43,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
     'Gestion Patient Mobile'
   ];
 
-  // Liste des notifications avec champ recipientId
+  // Liste des notifications
   const [notifications, setNotifications] = useState([
     { id: 1, recipientId: 'all', title: 'Serveur principal', message: 'Surcharge CPU détectée', time: '5m', read: false },
     { id: 2, recipientId: 2, title: 'Projet SI', message: 'Nouvelle tâche assignée', time: '1h', read: false },
@@ -45,10 +56,24 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
     setNotifications(notifications.map(n => ({ ...n, read: true })));
   };
 
-  // Soumission de la nouvelle notification
+  // Fermeture des popovers au clic à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationsOpen(false);
+      }
+      if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target)) {
+        setIsProjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Soumission de notification
   const handleSendNotification = (e) => {
     e.preventDefault();
-    if (!newNotification.title || !newNotification.message) return;
+    if (!newNotification.title.trim() || !newNotification.message.trim()) return;
 
     const notificationToAdd = {
       id: Date.now(),
@@ -64,16 +89,15 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
     setIsSendModalOpen(false);
   };
 
-  // Helper pour vérifier si l'onglet Chronologie est actif
-  const isTimelineActive = activeTab === 'timeline' || activeTab === 'planning' || activeTab === 'chronologie';
+  const isTimelineActive = ['timeline', 'planning', 'chronologie'].includes(activeTab);
 
   return (
     <div className="flex h-screen bg-slate-50 text-slate-800 font-sans">
       
       {/* ================= SIDEBAR GAUCHE ================= */}
-      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between">
+      <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between shrink-0">
         <div>
-          {/* Header de la Sidebar / Brand */}
+          {/* Header Sidebar / Brand */}
           <div className="h-16 flex items-center px-4 border-b border-slate-100">
             <div className="flex items-center gap-2">
               <img 
@@ -87,7 +111,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
             </div>
           </div>
 
-          {/* Section Projets / Vues d'ensemble */}
+          {/* Vues d'ensemble */}
           <div className="p-4">
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
               Vues d'ensemble
@@ -127,7 +151,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
 
             <div className="my-6 border-t border-slate-100" />
 
-            {/* Section Administration CHU */}
+            {/* Administration IT */}
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 px-2">
               Administration IT
             </p>
@@ -153,7 +177,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
               <SidebarItem 
                 icon="🤖" 
                 label="Assistant Chatbot" 
-                active={activeTab === 'chatbot' || activeTab === 'chat' || activeTab === 'assistant'} 
+                active={['chatbot', 'chat', 'assistant'].includes(activeTab)} 
                 onClick={() => setActiveTab('chatbot')}
               />
             </nav>
@@ -167,7 +191,6 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
         {/* TOP NAVBAR */}
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 relative z-20">
           
-          {/* Sélecteur de Projet + Recherche Interactifs */}
           <div className="flex items-center gap-6">
 
             {/* Barre de Recherche */}
@@ -197,7 +220,7 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
             {/* Bouton Déconnexion */}
             <button 
               onClick={onLogout}
-              className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 px-3.5 py-1.5 rounded-md font-semibold text-sm transition-all active:scale-95 shadow-xs"
+              className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 px-3.5 py-1.5 rounded-md font-semibold text-sm transition-all active:scale-95 shadow-xs cursor-pointer"
             >
               <span>🚪</span>
               <span>Déconnexion</span>
@@ -205,11 +228,11 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
 
             <div className="h-6 w-px bg-slate-200" />
 
-            {/* Notifications Interactives */}
-            <div className="relative">
+            {/* Notifications */}
+            <div className="relative" ref={notificationRef}>
               <button 
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
-                className="relative text-slate-500 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors"
+                className="relative text-slate-500 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               >
                 🔔
                 {unreadCount > 0 && (
@@ -228,14 +251,14 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
                           setIsNotificationsOpen(false);
                           setIsSendModalOpen(true);
                         }}
-                        className="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded transition-colors"
+                        className="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded transition-colors cursor-pointer"
                       >
                         ➕ Envoyer
                       </button>
                       {unreadCount > 0 && (
                         <button 
                           onClick={markAllAsRead}
-                          className="text-[11px] text-blue-600 hover:underline"
+                          className="text-[11px] text-blue-600 hover:underline cursor-pointer"
                         >
                           Tout lire
                         </button>
@@ -244,34 +267,38 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
                   </div>
 
                   <div className="max-h-64 overflow-y-auto">
-                    {notifications.map((n) => {
-                      const recipient = teamMembers.find(m => m.id === n.recipientId);
-                      return (
-                        <div 
-                          key={n.id} 
-                          className={`p-3 text-xs border-b border-slate-50 hover:bg-slate-50 transition-colors ${
-                            !n.read ? 'bg-blue-50/30' : ''
-                          }`}
-                        >
-                          <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
-                            <span>{n.title}</span>
-                            <span className="text-[10px] text-slate-400">{n.time}</span>
+                    {notifications.length === 0 ? (
+                      <p className="p-4 text-center text-xs text-slate-400">Aucune notification</p>
+                    ) : (
+                      notifications.map((n) => {
+                        const recipient = teamMembers.find(m => m.id === n.recipientId);
+                        return (
+                          <div 
+                            key={n.id} 
+                            className={`p-3 text-xs border-b border-slate-50 hover:bg-slate-50 transition-colors ${
+                              !n.read ? 'bg-blue-50/30' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
+                              <span>{n.title}</span>
+                              <span className="text-[10px] text-slate-400">{n.time}</span>
+                            </div>
+                            <p className="text-slate-600">{n.message}</p>
+                            {n.recipientId !== 'all' && recipient && (
+                              <span className="inline-block mt-1 text-[10px] bg-purple-50 text-purple-700 font-medium px-1.5 py-0.5 rounded border border-purple-200">
+                                Pour : {recipient.prenom} {recipient.nom}
+                              </span>
+                            )}
                           </div>
-                          <p className="text-slate-600">{n.message}</p>
-                          {n.recipientId !== 'all' && recipient && (
-                            <span className="inline-block mt-1 text-[10px] bg-purple-50 text-purple-700 font-medium px-1.5 py-0.5 rounded border border-purple-200">
-                              Pour : {recipient.prenom} {recipient.nom}
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
+                        );
+                      })
+                    )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Avatar Utilisateur / Profil */}
+            {/* Avatar Utilisateur */}
             <div 
               onClick={onOpenProfile}
               className="flex items-center gap-3 pl-2 cursor-pointer hover:opacity-80 transition-opacity"
@@ -292,19 +319,24 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
           </div>
         </header>
 
-        {/* CONTENU DE LA PAGE EN COURS */}
+        {/* CONTENU PRINCIPAL */}
         <main className="flex-1 overflow-auto p-6">
           {children}
         </main>
       </div>
 
-      {/* MODAL ENVOI NOTIFICATION AU MEMBRE */}
+      {/* MODAL ENVOI NOTIFICATION */}
       {isSendModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-md border border-slate-200 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-sm">Envoyer une notification</h3>
-              <button onClick={() => setIsSendModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button 
+                onClick={() => setIsSendModalOpen(false)} 
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
             </div>
 
             <form onSubmit={handleSendNotification} className="p-4 space-y-3">
@@ -352,13 +384,13 @@ export default function AdminLayout({ children, user, activeTab, setActiveTab, o
                 <button
                   type="button"
                   onClick={() => setIsSendModalOpen(false)}
-                  className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50"
+                  className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 cursor-pointer"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium cursor-pointer"
                 >
                   Envoyer
                 </button>
@@ -376,7 +408,7 @@ function SidebarItem({ icon, label, active = false, onClick }) {
   return (
     <button 
       onClick={onClick}
-      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
         active 
           ? 'bg-blue-50 text-blue-600 font-semibold' 
           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
