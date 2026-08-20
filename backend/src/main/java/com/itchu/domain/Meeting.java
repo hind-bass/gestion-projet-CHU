@@ -53,6 +53,9 @@ public class Meeting {
     @Column(name = "resume_genere", columnDefinition = "LONGTEXT")
     private String resumeGenere;
 
+    @Column(name = "notes_manuelles", columnDefinition = "TEXT")
+    private String notesManuelles;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "statut_traitement", nullable = false, length = 20)
     private MeetingProcessingStatus statutTraitement = MeetingProcessingStatus.EN_ATTENTE;
@@ -119,6 +122,14 @@ public class Meeting {
 
     public void setResumeGenere(String resumeGenere) {
         this.resumeGenere = resumeGenere;
+    }
+
+    public String getNotesManuelles() {
+        return notesManuelles;
+    }
+
+    public void setNotesManuelles(String notesManuelles) {
+        this.notesManuelles = notesManuelles;
     }
 
     public MeetingProcessingStatus getStatutTraitement() {

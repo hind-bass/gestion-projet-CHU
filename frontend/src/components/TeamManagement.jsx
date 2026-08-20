@@ -1,130 +1,157 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { addProjectMember, listProjects, removeProjectMember } from '../api/projects';
+import { activateUser, createUser, deactivateUser, listUsers, updateUser } from '../api/users';
+import { extractErrorMessage } from '../lib/api';
+import { fullName, roleLabel } from '../lib/labels';
+
+const EMPTY_FORM = {
+  nom: '',
+  prenom: '',
+  email: '',
+  password: '',
+  role: 'MEMBRE',
+  competences: '',
+  projetsAffectes: [],
+  actif: true,
+};
 
 export default function TeamManagement() {
-  // Liste des projets disponibles dans le CHU
-  const availableProjects = [
-    { id: 'PRJ-CHU-01', nom: 'Refonte SI Hospitalier' },
-    { id: 'PRJ-CHU-02', nom: 'Informatisation Dossier Patient' },
-    { id: 'PRJ-CHU-03', nom: 'Sécurisation Réseau & Wifi Bloc' },
-    { id: 'PRJ-CHU-04', nom: 'Gestion Téléphonie IP Service Urgences' }
-  ];
-
-  // Liste des membres de l'équipe IT
-  const [members, setMembers] = useState([
-    {
-      id: 1,
-      nom: 'Alami',
-      prenom: 'Youssef',
-      email: 'y.alami@chu.ma',
-      password: 'password123',
-      role: 'Ingénieur Système & Réseau',
-      competences: ['Linux', 'Cisco', 'Sécurité'],
-      projetsAffectes: ['PRJ-CHU-01', 'PRJ-CHU-03'],
-      chargeActuelle: '4/5 Tâches'
-    },
-    {
-      id: 2,
-      nom: 'Chraibi',
-      prenom: 'Sanaa',
-      email: 's.chraibi@chu.ma',
-      password: 'password123',
-      role: 'Développeuse Fullstack',
-      competences: ['Spring Boot', 'React', 'PostgreSQL'],
-      projetsAffectes: ['PRJ-CHU-01', 'PRJ-CHU-02'],
-      chargeActuelle: '3/5 Tâches'
-    }
-  ]);
-
+  const [members, setMembers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const [formData, setFormData] = useState({
-    nom: '',
-    prenom: '',
-    email: '',
-    password: '',
-    role: 'Technicien Support IT',
-    competences: '',
-    projetsAffectes: []
-  });
+  const membershipsByUser = useMemo(() => {
+    const map = {};
+    projects.forEach((project) => {
+      (project.membres || []).forEach((member) => {
+        if (!map[member.id]) map[member.id] = [];
+        map[member.id].push(project);
+      });
+    });
+    return map;
+  }, [projects]);
 
-  // Supprimer un membre
-  const handleDeleteMember = (id, prenom, nom) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le membre ${prenom} ${nom} ?`)) {
-      setMembers(members.filter(member => member.id !== id));
+  async function load() {
+    setLoading(true);
+    setError('');
+    try {
+      const [users, projectList] = await Promise.all([listUsers(), listProjects()]);
+      setMembers(Array.isArray(users) ? users : []);
+      setProjects(Array.isArray(projectList) ? projectList : []);
+    } catch (err) {
+      setError(extractErrorMessage(err, "Impossible de charger l'équipe."));
+    } finally {
+      setLoading(false);
     }
-  };
+  }
 
-  // Ouvrir la modal en mode Création
+  useEffect(() => {
+    load();
+  }, []);
+
   const handleOpenCreateModal = () => {
     setEditingMember(null);
     setShowPassword(false);
-    setFormData({
-      nom: '',
-      prenom: '',
-      email: '',
-      password: '',
-      role: 'Technicien Support IT',
-      competences: '',
-      projetsAffectes: []
-    });
+    setFormData(EMPTY_FORM);
     setIsModalOpen(true);
   };
 
-  // Ouvrir la modal en mode Modification
   const handleOpenEditModal = (member) => {
     setEditingMember(member);
     setShowPassword(false);
     setFormData({
-      ...member,
-      password: '', // Vide lors de l'édition (à remplir seulement si réinitialisation)
-      competences: Array.isArray(member.competences) ? member.competences.join(', ') : member.competences
+      nom: member.nom || '',
+      prenom: member.prenom || '',
+      email: member.email || '',
+      password: '',
+      role: member.role || 'MEMBRE',
+      competences: (member.competences || []).join(', '),
+      projetsAffectes: (membershipsByUser[member.id] || []).map((p) => p.id),
+      actif: member.actif !== false,
     });
     setIsModalOpen(true);
   };
 
-  // Gestion des cases à cocher pour les projets affectés
-  const handleProjectToggle = (projectCode) => {
-    const updatedProjects = formData.projetsAffectes.includes(projectCode)
-      ? formData.projetsAffectes.filter(code => code !== projectCode)
-      : [...formData.projetsAffectes, projectCode];
-
-    setFormData({ ...formData, projetsAffectes: updatedProjects });
+  const handleProjectToggle = (projectId) => {
+    setFormData((prev) => ({
+      ...prev,
+      projetsAffectes: prev.projetsAffectes.includes(projectId)
+        ? prev.projetsAffectes.filter((id) => id !== projectId)
+        : [...prev.projetsAffectes, projectId],
+    }));
   };
 
-  // Enregistrement
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const skillsArray = typeof formData.competences === 'string' 
-      ? formData.competences.split(',').map(s => s.trim()).filter(Boolean)
-      : formData.competences;
-
-    if (editingMember) {
-      setMembers(members.map(m => m.id === editingMember.id 
-        ? { 
-            ...formData, 
-            // Si le mot de passe est laissé vide en modification, conserver l'ancien
-            password: formData.password ? formData.password : m.password,
-            competences: skillsArray 
-          } 
-        : m
-      ));
-    } else {
-      const newMember = {
-        ...formData,
-        id: Date.now(),
-        competences: skillsArray,
-        chargeActuelle: '0/5 Tâches'
-      };
-      setMembers([...members, newMember]);
+  const syncMemberships = async (userId, selectedIds) => {
+    for (const project of projects) {
+      const isMember = (project.membres || []).some((m) => m.id === userId);
+      const shouldBe = selectedIds.includes(project.id);
+      if (shouldBe && !isMember) {
+        await addProjectMember(project.id, userId);
+      } else if (!shouldBe && isMember) {
+        await removeProjectMember(project.id, userId);
+      }
     }
-    setIsModalOpen(false);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError('');
+    const competences = formData.competences.split(',').map((s) => s.trim()).filter(Boolean);
+    try {
+      let userId = editingMember?.id;
+      if (editingMember) {
+        await updateUser(editingMember.id, {
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          role: formData.role,
+          competences,
+          actif: formData.actif,
+        });
+      } else {
+        const created = await createUser({
+          nom: formData.nom,
+          prenom: formData.prenom,
+          email: formData.email,
+          motDePasse: formData.password,
+          role: formData.role,
+          competences,
+        });
+        userId = created.id;
+      }
+      await syncMemberships(userId, formData.projetsAffectes);
+      setIsModalOpen(false);
+      await load();
+    } catch (err) {
+      setError(extractErrorMessage(err, "Enregistrement du membre impossible."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleActive = async (member) => {
+    setError('');
+    try {
+      if (member.actif) {
+        await deactivateUser(member.id);
+      } else {
+        await activateUser(member.id);
+      }
+      await load();
+    } catch (err) {
+      setError(extractErrorMessage(err, 'Changement de statut impossible.'));
+    }
   };
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
       <div className="flex justify-between items-center bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
         <div>
           <h1 className="text-xl font-bold text-slate-900">Gestion de l'Équipe IT</h1>
@@ -134,13 +161,16 @@ export default function TeamManagement() {
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
         >
-          <span>+</span> Nouveau Membre
+          + Nouveau Membre
         </button>
       </div>
 
-      {/* Tableau de l'équipe */}
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-medium">{error}</div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -148,94 +178,90 @@ export default function TeamManagement() {
               <th className="p-4">Membre</th>
               <th className="p-4">Rôle & Compétences</th>
               <th className="p-4">Projets Affectés</th>
-              <th className="p-4 text-center">Charge</th>
+              <th className="p-4 text-center">Statut</th>
               <th className="p-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 text-sm">
-            {members.map((member) => (
-              <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
-                
-                {/* Membre Info */}
-                <td className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs">
-                      {member.prenom[0]}{member.nom[0]}
+            {loading && (
+              <tr>
+                <td colSpan="5" className="p-8 text-center text-slate-400 text-xs">Chargement de l'équipe…</td>
+              </tr>
+            )}
+            {!loading && members.map((member) => {
+              const assigned = membershipsByUser[member.id] || [];
+              return (
+                <tr key={member.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-slate-800 text-white font-bold flex items-center justify-center text-xs">
+                        {(member.prenom?.[0] || '')}{(member.nom?.[0] || '')}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-900">{fullName(member)}</p>
+                        <p className="text-xs text-slate-400">{member.email}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-semibold text-slate-900">{member.prenom} {member.nom}</p>
-                      <p className="text-xs text-slate-400">{member.email}</p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Rôle & Compétences */}
-                <td className="p-4">
-                  <p className="font-medium text-slate-800 text-xs">{member.role}</p>
-                  <div className="flex flex-wrap gap-1 mt-1.5">
-                    {member.competences.map((comp, idx) => (
-                      <span key={idx} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
-                        {comp}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-
-                {/* Projets Affectés */}
-                <td className="p-4">
-                  {member.projetsAffectes.length > 0 ? (
-                    <div className="flex flex-wrap gap-1.5">
-                      {member.projetsAffectes.map((pCode) => (
-                        <span key={pCode} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 font-semibold px-2 py-0.5 rounded-full">
-                          {pCode}
+                  </td>
+                  <td className="p-4">
+                    <p className="font-medium text-slate-800 text-xs">{roleLabel(member.role)}</p>
+                    <div className="flex flex-wrap gap-1 mt-1.5">
+                      {(member.competences || []).map((comp) => (
+                        <span key={comp} className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
+                          {comp}
                         </span>
                       ))}
                     </div>
-                  ) : (
-                    <span className="text-xs text-slate-400 italic">Aucun projet</span>
-                  )}
-                </td>
-
-                {/* Charge */}
-                <td className="p-4 text-center">
-                  <span className="text-xs font-semibold bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full border border-amber-200">
-                    {member.chargeActuelle}
-                  </span>
-                </td>
-
-                {/* Actions */}
-                <td className="p-4 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => handleOpenEditModal(member)}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2.5 py-1 rounded hover:bg-blue-50 transition-colors"
-                      title="Modifier le membre"
-                    >
-                      ✏️ Affecter / Modifier
-                    </button>
-                    <button
-                      onClick={() => handleDeleteMember(member.id, member.prenom, member.nom)}
-                      className="text-xs text-red-600 hover:text-red-800 font-semibold px-2.5 py-1 rounded hover:bg-red-50 transition-colors"
-                      title="Supprimer le membre"
-                    >
-                      🗑️ Supprimer
-                    </button>
-                  </div>
-                </td>
-
-              </tr>
-            ))}
+                  </td>
+                  <td className="p-4">
+                    {assigned.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {assigned.map((project) => (
+                          <span key={project.id} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 font-semibold px-2 py-0.5 rounded-full">
+                            {project.nom}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-slate-400 italic">Aucun projet</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-center">
+                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${
+                      member.actif ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200'
+                    }`}>
+                      {member.actif ? 'Actif' : 'Inactif'}
+                    </span>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleOpenEditModal(member)}
+                        className="text-xs text-blue-600 hover:text-blue-800 font-semibold px-2.5 py-1 rounded hover:bg-blue-50"
+                      >
+                        Modifier
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(member)}
+                        className="text-xs text-amber-700 hover:text-amber-900 font-semibold px-2.5 py-1 rounded hover:bg-amber-50"
+                      >
+                        {member.actif ? 'Désactiver' : 'Activer'}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* MODAL CRÉATION / MODIFICATION MEMBRE */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-base">
-                {editingMember ? 'Modifier le Membre & ses Projets' : 'Créer un Compte Membre'}
+                {editingMember ? 'Modifier le membre' : 'Créer un compte membre'}
               </h3>
               <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
@@ -249,7 +275,7 @@ export default function TeamManagement() {
                     required
                     value={formData.prenom}
                     onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                   />
                 </div>
                 <div>
@@ -259,58 +285,50 @@ export default function TeamManagement() {
                     required
                     value={formData.nom}
                     onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Adresse Email Institutionnelle</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
                 <input
                   type="email"
                   required
-                  placeholder="m.nom@chu.ma"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                 />
               </div>
 
-              {/* Champ Mot de Passe */}
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">
-                  Mot de passe {editingMember && <span className="text-slate-400 font-normal">(laisser vide pour ne pas modifier)</span>}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    required={!editingMember}
-                    placeholder={editingMember ? '••••••••' : 'Saisir un mot de passe sécurisé'}
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600"
-                  >
-                    {showPassword ? '🙈' : '👁️'}
-                  </button>
+              {!editingMember && (
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Mot de passe</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={8}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm"
+                    />
+                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-xs text-slate-400">
+                      {showPassword ? 'Masquer' : 'Voir'}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Rôle / Spécialité</label>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Rôle</label>
                 <select
                   value={formData.role}
                   onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
                 >
-                  <option value="Technicien Support IT">Technicien Support IT</option>
-                  <option value="Ingénieur Système & Réseau">Ingénieur Système & Réseau</option>
-                  <option value="Développeuse Fullstack">Développeur / Développeuse Application</option>
-                  <option value="Administrateur Base de Données">Administrateur BDD</option>
+                  <option value="MEMBRE">Membre d'équipe</option>
+                  <option value="ADMIN">Administrateur</option>
                 </select>
               </div>
 
@@ -318,47 +336,35 @@ export default function TeamManagement() {
                 <label className="block text-xs font-medium text-slate-700 mb-1">Compétences (séparées par des virgules)</label>
                 <input
                   type="text"
-                  placeholder="Java, React, SQL, Virtualisation..."
                   value={formData.competences}
                   onChange={(e) => setFormData({ ...formData, competences: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                 />
               </div>
 
-              {/* SECTION AFFECTATION AUX PROJETS */}
-              <div className="pt-2">
-                <label className="block text-xs font-semibold text-slate-800 mb-2">
-                  Affecter à un ou plusieurs projets :
-                </label>
+              <div>
+                <label className="block text-xs font-semibold text-slate-800 mb-2">Affecter aux projets</label>
                 <div className="space-y-2 max-h-36 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  {availableProjects.map((prj) => (
-                    <label key={prj.id} className="flex items-center gap-3 cursor-pointer text-xs text-slate-700 hover:text-slate-900">
+                  {projects.map((project) => (
+                    <label key={project.id} className="flex items-center gap-3 cursor-pointer text-xs text-slate-700">
                       <input
                         type="checkbox"
-                        checked={formData.projetsAffectes.includes(prj.id)}
-                        onChange={() => handleProjectToggle(prj.id)}
-                        className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        checked={formData.projetsAffectes.includes(project.id)}
+                        onChange={() => handleProjectToggle(project.id)}
+                        className="rounded border-slate-300 text-blue-600"
                       />
-                      <span className="font-mono font-bold text-blue-700">{prj.id}</span>
-                      <span>— {prj.nom}</span>
+                      <span>{project.nom}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50"
-                >
+                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50">
                   Annuler
                 </button>
-                <button
-                  type="submit"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
-                >
-                  {editingMember ? 'Enregistrer les modifications' : 'Créer le Membre'}
+                <button type="submit" disabled={saving} className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                  {editingMember ? 'Enregistrer' : 'Créer le membre'}
                 </button>
               </div>
             </form>

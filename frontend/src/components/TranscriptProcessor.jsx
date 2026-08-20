@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { listProjects } from '../api/projects';
+import { iaProcessTranscript } from '../lib/ia';
 
 // Icônes SVG
 const CpuIcon = () => (
@@ -25,20 +27,30 @@ const TrashIcon = () => (
   </svg>
 );
 
-const FASTAPI_URL = 'http://localhost:8000';
-
 export default function TranscriptProcessor({
-  projects = [
-    { id: 'PRJ-CHU-01', name: 'PRJ-CHU-01 (Refonte SI Hospitalier)' },
-    { id: 'PRJ-CHU-02', name: 'PRJ-CHU-02 (Dossier Patient)' }
-  ],
+  projects: projectsProp,
   onSendToValidation
 }) {
-  const [selectedProject, setSelectedProject] = useState(projects[0]?.id || 'PRJ-CHU-01');
+  const [projects, setProjects] = useState(projectsProp || []);
+  const [selectedProject, setSelectedProject] = useState(projectsProp?.[0]?.id || '');
   const [transcriptText, setTranscriptText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
+
+  useEffect(() => {
+    if (projectsProp?.length) return undefined;
+    let cancelled = false;
+    listProjects()
+      .then((data) => {
+        if (cancelled) return;
+        const list = Array.isArray(data) ? data : [];
+        setProjects(list);
+        setSelectedProject((current) => current || list[0]?.id || '');
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectsProp]);
 
   const sampleTranscript = `Réunion du 25 juillet 2026 - Projet Refonte SI Hospitalier
 Participants: Chef de service IT, Youssef Alami, Sanaa Chraibi
@@ -57,22 +69,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
     setErrorMessage('');
 
     try {
-      const response = await fetch(`${FASTAPI_URL}/api/ai/meetings/process`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transcription: transcriptText
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Erreur serveur FastAPI (${response.status})`);
-      }
-
-      const data = await response.json();
+      const data = await iaProcessTranscript(transcriptText);
       setAnalysisResult(data);
     } catch (err) {
       console.error("Erreur lors de l'appel FastAPI :", err);
@@ -85,7 +82,17 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
   const handleSendToValidationModule = () => {
     if (!analysisResult?.suggested_tasks) return;
     if (onSendToValidation) {
-      onSendToValidation(analysisResult.suggested_tasks);
+      const mapped = (analysisResult.suggested_tasks || []).map((t, index) => ({
+        id: t.id || `AI-${index + 1}`,
+        titre: t.title || t.titre,
+        projet: selectedProject,
+        assigneA: t.assignee || t.assigneA || '',
+        priorite: t.priority || t.priorite || 'MOYENNE',
+        dateEcheance: t.due_date || t.dateEcheance || '',
+        confianceIA: t.confidence || t.confianceIA || 70,
+        statutValidation: 'EN_ATTENTE',
+      }));
+      onSendToValidation(mapped);
     } else {
       alert(`${analysisResult.suggested_tasks.length} tâche(s) envoyée(s) au module de validation IA avec succès !`);
     }
@@ -159,7 +166,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
               >
                 {projects.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name}
+                    {p.nom || p.name}
                   </option>
                 ))}
               </select>

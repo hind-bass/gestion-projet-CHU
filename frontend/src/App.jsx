@@ -1,4 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+
+// Contexte d'authentification
+import { useAuth } from './context/AuthContext';
 
 // Composants communs
 import LoginPage from './components/LoginPage';
@@ -21,7 +24,7 @@ import AITaskValidation from './components/AITaskValidation';
 import AIAssistantChat from './components/AIAssistantChat';
 import TimelinePlanning from './components/TimelinePlanning';
 
-// Vues Membre de l'équipe (User)
+// Vues Membre de l'équipe (MEMBRE)
 import UserDashboard from './components/user/UserDashboard';
 import UserProjects from './components/user/UserProjects';
 import UserTasks from './components/user/UserTasks';
@@ -31,49 +34,35 @@ import UserChatbot from './components/user/UserChatbot';
 import UserNotifications from './components/user/UserNotifications';
 
 export default function App() {
-  const [currentUser, setCurrentUser] = useState(null);
+  const { user: currentUser, isAdmin, initializing, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   // État partagé pour faire circuler les tâches extraites du transcript vers la validation
   const [pendingAITasks, setPendingAITasks] = useState([]);
 
-  // Gestion de la déconnexion
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setCurrentUser(null);
+  const handleLogout = async () => {
+    await logout();
     setActiveTab('dashboard');
+    setIsProfileOpen(false);
   };
 
-  // Récupération automatique de la session utilisateur au démarrage
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    const token = localStorage.getItem('token');
-    if (savedUser && token) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch (err) {
-        console.error("Erreur lors de la lecture de la session :", err);
-        handleLogout();
-      }
-    }
-  }, []);
-
-  // Redirection vers la page de Login si aucun utilisateur n'est connecté
-  if (!currentUser) {
+  // Vérification de la session en cours au démarrage
+  if (initializing) {
     return (
-      <LoginPage 
-        onLoginSuccess={(user) => {
-          setCurrentUser(user);
-          localStorage.setItem('user', JSON.stringify(user));
-          setActiveTab('dashboard');
-        }} 
-      />
+      <div className="min-h-screen w-full bg-gradient-to-br from-teal-50 via-sky-50 to-emerald-100 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 border-3 border-teal-600 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-teal-800">Vérification de la session…</p>
+        </div>
+      </div>
     );
   }
 
-  const isAdmin = currentUser.role === 'ADMIN';
+  // Redirection vers la page de Login si aucun utilisateur n'est connecté
+  if (!currentUser) {
+    return <LoginPage onLoggedIn={() => setActiveTab('dashboard')} />;
+  }
 
   // Rendu dynamique des vues Administrateur
   const renderAdminView = () => {
@@ -132,7 +121,7 @@ export default function App() {
       case 'meetings':
         return <UserMeetings user={currentUser} />;
       case 'workload':
-        return <UserWorkload user={currentUser} />;
+        return <UserWorkload user={currentUser} onNavigate={(tab) => setActiveTab(tab)} />;
       case 'notifications':
         return <UserNotifications user={currentUser} />;
       case 'chatbot':
@@ -158,7 +147,7 @@ export default function App() {
           {renderAdminView()}
         </AdminLayout>
       ) : (
-        /* ================= ESPACE MEMBRE D'ÉQUIPE (USER) ================= */
+        /* ================= ESPACE MEMBRE D'ÉQUIPE ================= */
         <UserLayout 
           user={currentUser} 
           activeTab={activeTab}
@@ -175,11 +164,6 @@ export default function App() {
         <ProfileModal 
           user={currentUser} 
           onClose={() => setIsProfileOpen(false)}
-          onUpdateProfile={(updatedData) => {
-            const updatedUser = { ...currentUser, ...updatedData };
-            setCurrentUser(updatedUser);
-            localStorage.setItem('user', JSON.stringify(updatedUser));
-          }}
         />
       )}
     </>

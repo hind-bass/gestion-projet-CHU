@@ -1,4 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  alertAdmin,
+  listNotifications,
+  markAllNotificationsRead,
+} from '../api/notifications';
+import { extractErrorMessage } from '../lib/api';
+import { notificationTypeDetails, relativeTime } from '../lib/labels';
+
+const NOTIFICATIONS_POLL_MS = 60000;
 
 export default function UserLayout({ children, user, activeTab, setActiveTab, onOpenProfile, onLogout }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -10,21 +19,44 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
   const [notifMessage, setNotifMessage] = useState('');
   const [notifPriority, setNotifPriority] = useState('INFO');
   const [sentSuccess, setSentSuccess] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   // Ref pour fermer le dropdown au clic extérieur
   const notificationRef = useRef(null);
 
-  // Notifications intelligentes du membre
-  const [notifications, setNotifications] = useState([
-    { id: 1, type: 'warning', title: 'Échéance proche', message: 'Tâche "Config VLAN" à rendre demain à 17h.', time: '10m', read: false },
-    { id: 2, type: 'danger', title: 'Tâche en retard', message: 'Le déploiement du patch de sécurité a dépassé la date limite.', time: '2h', read: false },
-    { id: 3, type: 'info', title: 'Surcharge détectée', message: 'Votre charge estimée dépasse 85% pour cette semaine.', time: '1j', read: true }
-  ]);
+  // Notifications du membre (backend)
+  const [notifications, setNotifications] = useState([]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter((n) => !n.lu).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const loadNotifications = useCallback(async () => {
+    try {
+      const data = await listNotifications();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      // Le bandeau reste silencieux : les vues détaillées affichent l'erreur.
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, NOTIFICATIONS_POLL_MS);
+    return () => clearInterval(interval);
+  }, [loadNotifications]);
+
+  // Rafraîchit le compteur quand le membre quitte le centre de notifications.
+  useEffect(() => {
+    if (activeTab !== 'notifications') loadNotifications();
+  }, [activeTab, loadNotifications]);
+
+  const markAllAsRead = async () => {
+    setNotifications((prev) => prev.map((n) => ({ ...n, lu: true })));
+    try {
+      await markAllNotificationsRead();
+    } catch {
+      loadNotifications();
+    }
   };
 
   // Fermeture du dropdown notifications au clic à l'extérieur
@@ -39,30 +71,33 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
   }, []);
 
   // Soumission de la notification vers l'admin
-  const handleSendToAdmin = (e) => {
+  const handleSendToAdmin = async (e) => {
     e.preventDefault();
     if (!notifSubject.trim() || !notifMessage.trim()) return;
 
-    const newAdminNotification = {
-      senderId: user?.id,
-      senderName: `${user?.prenom} ${user?.nom}`,
-      subject: notifSubject,
-      message: notifMessage,
-      priority: notifPriority,
-      date: new Date().toISOString()
-    };
+    setSending(true);
+    setSendError('');
+    try {
+      await alertAdmin({
+        subject: notifSubject.trim(),
+        message: notifMessage.trim(),
+        priority: notifPriority,
+      });
 
-    console.log("Notification envoyée à l'Admin :", newAdminNotification);
-
-    // Feedback visuel et réinitialisation
-    setSentSuccess(true);
-    setTimeout(() => {
-      setSentSuccess(false);
-      setIsSendNotifOpen(false);
-      setNotifSubject('');
-      setNotifMessage('');
-      setNotifPriority('INFO');
-    }, 1500);
+      // Feedback visuel et réinitialisation
+      setSentSuccess(true);
+      setTimeout(() => {
+        setSentSuccess(false);
+        setIsSendNotifOpen(false);
+        setNotifSubject('');
+        setNotifMessage('');
+        setNotifPriority('INFO');
+      }, 1500);
+    } catch (err) {
+      setSendError(extractErrorMessage(err, "Impossible d'envoyer l'alerte à l'administrateur."));
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -247,25 +282,28 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                     {notifications.length === 0 ? (
                       <p className="p-4 text-center text-xs text-slate-400">Aucune notification</p>
                     ) : (
-                      notifications.map((n) => (
-                        <div 
-                          key={n.id} 
-                          className={`p-3 text-xs border-b border-slate-50 hover:bg-slate-50 transition-colors ${
-                            !n.read ? 'bg-teal-50/20' : ''
-                          }`}
-                        >
-                          <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
-                            <span className={
-                              n.type === 'danger' ? 'text-red-600' :
-                              n.type === 'warning' ? 'text-amber-600' : 'text-teal-600'
-                            }>
-                              {n.title}
-                            </span>
-                            <span className="text-[10px] text-slate-400">{n.time}</span>
+                      notifications.map((n) => {
+                        const details = notificationTypeDetails(n.type);
+                        return (
+                          <div 
+                            key={n.id} 
+                            className={`p-3 text-xs border-b border-slate-50 hover:bg-slate-50 transition-colors ${
+                              !n.lu ? 'bg-teal-50/20' : ''
+                            }`}
+                          >
+                            <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
+                              <span className={
+                                details.kind === 'danger' ? 'text-red-600' :
+                                details.kind === 'warning' ? 'text-amber-600' : 'text-teal-600'
+                              }>
+                                {details.icon} {details.tag}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{relativeTime(n.dateCreation)}</span>
+                            </div>
+                            <p className="text-slate-600">{n.message}</p>
                           </div>
-                          <p className="text-slate-600">{n.message}</p>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
 
@@ -332,6 +370,12 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
               </div>
             ) : (
               <form onSubmit={handleSendToAdmin} className="p-5 space-y-4">
+                {sendError && (
+                  <div className="p-2.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
+                    {sendError}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Niveau d'Urgence / Type
@@ -385,9 +429,10 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors shadow-xs cursor-pointer"
+                    disabled={sending}
+                    className="px-4 py-1.5 rounded-lg text-xs font-semibold text-white bg-teal-600 hover:bg-teal-700 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
                   >
-                    Envoyer
+                    {sending ? 'Envoi…' : 'Envoyer'}
                   </button>
                 </div>
               </form>

@@ -4,11 +4,13 @@ server:
 spring:
   application:
     name: it-chu-manager
+  profiles:
+    default: dev
   jpa:
     open-in-view: false
 
 cors:
-  allowed-origins: ${CORS_ORIGIN:http://localhost:5173}
+  allowed-origins: ${CORS_ORIGIN:http://localhost:5173,http://localhost:8080}
 
 management:
   endpoints:
@@ -22,3 +24,16 @@ management:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+app:
+  jwt:
+    access-secret: ${JWT_ACCESS_SECRET:change-me-access-secret-min-32-chars-long!!}
+    refresh-secret: ${JWT_REFRESH_SECRET:change-me-refresh-secret-min-32-chars-long!}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
+  seed:
+    enabled: ${APP_SEED_ENABLED:false}
+  ai:
+    enabled: ${APP_AI_ENABLED:false}
+    service-url: ${IA_SERVICE_URL:http://localhost:8000}
+    internal-token: ${IA_SERVICE_INTERNAL_TOKEN:}

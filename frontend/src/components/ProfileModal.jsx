@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
+import { changeMyPassword, updateMyProfile } from '../api/users';
+import { useAuth } from '../context/AuthContext';
+import { extractErrorMessage } from '../lib/api';
+import { roleLabel } from '../lib/labels';
 
-export default function ProfileModal({ user, onClose, onUpdateProfile }) {
+export default function ProfileModal({ user, onClose }) {
+  const { applyUser } = useAuth();
+
   const [formData, setFormData] = useState({
     nom: user?.nom || '',
     prenom: user?.prenom || '',
     email: user?.email || '',
-    title: user?.title || 'Membre IT',
-    notificationsEnabled: true
+    competences: (user?.competences || []).join(', ')
   });
 
   // États pour le changement de mot de passe
@@ -16,10 +21,14 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
     confirmPassword: ''
   });
   const [passwordError, setPasswordError] = useState('');
+  const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData({ ...formData, [name]: type === 'checkbox' ? checked : value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    if (formError) setFormError('');
   };
 
   const handlePasswordChange = (e) => {
@@ -27,17 +36,23 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
     if (passwordError) setPasswordError('');
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+    setSuccessMessage('');
+
+    const wantsPasswordChange = Boolean(
+      passwords.newPassword || passwords.confirmPassword || passwords.currentPassword
+    );
 
     // Validation du mot de passe si l'utilisateur tente de le modifier
-    if (passwords.newPassword || passwords.confirmPassword || passwords.currentPassword) {
+    if (wantsPasswordChange) {
       if (!passwords.currentPassword) {
         setPasswordError('Veuillez saisir votre mot de passe actuel.');
         return;
       }
-      if (passwords.newPassword.length < 6) {
-        setPasswordError('Le nouveau mot de passe doit contenir au moins 6 caractères.');
+      if (passwords.newPassword.length < 8) {
+        setPasswordError('Le nouveau mot de passe doit contenir au moins 8 caractères.');
         return;
       }
       if (passwords.newPassword !== passwords.confirmPassword) {
@@ -46,15 +61,45 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
       }
     }
 
-    // Soumission des données
-    onUpdateProfile({
-      ...formData,
-      ...(passwords.newPassword ? { newPassword: passwords.newPassword } : {})
-    });
-    onClose();
+    setSaving(true);
+    try {
+      const updated = await updateMyProfile({
+        nom: formData.nom.trim(),
+        prenom: formData.prenom.trim(),
+        competences: formData.competences
+          .split(',')
+          .map((c) => c.trim())
+          .filter(Boolean)
+      });
+      applyUser(updated);
+
+      if (wantsPasswordChange) {
+        await changeMyPassword({
+          motDePasseActuel: passwords.currentPassword,
+          nouveauMotDePasse: passwords.newPassword
+        });
+        setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      }
+
+      setSuccessMessage(
+        wantsPasswordChange
+          ? 'Profil et mot de passe mis à jour.'
+          : 'Profil mis à jour avec succès.'
+      );
+    } catch (err) {
+      const message = extractErrorMessage(err, 'Impossible d\u2019enregistrer le profil.');
+      if (wantsPasswordChange && err?.response?.status === 400) {
+        setPasswordError(message);
+      } else {
+        setFormError(message);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const roleText = user?.role === 'ADMIN' ? 'Administrateur' : 'Utilisateur';
+  const roleText = roleLabel(user?.role);
+  const initials = `${formData.prenom?.[0] || ''}${formData.nom?.[0] || ''}`;
 
   return (
     <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -72,16 +117,27 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
 
         {/* Contenu avec défilement si nécessaire */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
-          
+
+          {formError && (
+            <div className="p-2.5 bg-red-50 border border-red-200 text-red-600 text-xs rounded-lg font-medium">
+              {formError}
+            </div>
+          )}
+          {successMessage && (
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg font-medium">
+              ✅ {successMessage}
+            </div>
+          )}
+
           {/* Badge utilisateur */}
           <div className="flex items-center gap-4 p-3 bg-slate-50 rounded-lg border border-slate-100">
             <div className="w-12 h-12 rounded-full bg-slate-900 text-white font-bold flex items-center justify-center text-sm shrink-0">
-              {formData.prenom[0]}{formData.nom[0]}
+              {initials}
             </div>
             <div>
               <p className="text-sm font-semibold text-slate-900">{formData.prenom} {formData.nom}</p>
               <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium mt-0.5">
-                <span>🛡️ {formData.title} ({user?.role || 'USER'})</span>
+                <span>🛡️ {roleText} ({user?.role || 'MEMBRE'})</span>
               </div>
             </div>
           </div>
@@ -93,6 +149,7 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
               <input
                 type="text"
                 name="prenom"
+                required
                 value={formData.prenom}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -103,6 +160,7 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
               <input
                 type="text"
                 name="nom"
+                required
                 value={formData.nom}
                 onChange={handleChange}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -116,18 +174,25 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
               type="email"
               name="email"
               value={formData.email}
-              onChange={handleChange}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+              readOnly
+              disabled
+              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-slate-100 text-slate-500 cursor-not-allowed"
             />
+            <p className="text-[10px] text-slate-400 mt-1">
+              L'email est géré par l'administrateur DSI.
+            </p>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Titre / Poste</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              Compétences (séparées par des virgules)
+            </label>
             <input
               type="text"
-              name="title"
-              value={formData.title}
+              name="competences"
+              value={formData.competences}
               onChange={handleChange}
+              placeholder="Java, Spring, MySQL"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
             />
           </div>
@@ -181,22 +246,10 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
                   />
                 </div>
               </div>
+              <p className="text-[10px] text-slate-400">
+                Minimum 8 caractères. Laissez ces champs vides pour conserver votre mot de passe actuel.
+              </p>
             </div>
-          </div>
-
-          {/* Options de notification */}
-          <div className="flex items-center gap-2 pt-2">
-            <input
-              type="checkbox"
-              id="notificationsEnabled"
-              name="notificationsEnabled"
-              checked={formData.notificationsEnabled}
-              onChange={handleChange}
-              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-            />
-            <label htmlFor="notificationsEnabled" className="text-xs text-slate-600">
-              Recevoir les alertes automatiques de surcharges et retards
-            </label>
           </div>
 
           {/* Actions */}
@@ -206,13 +259,14 @@ export default function ProfileModal({ user, onClose, onUpdateProfile }) {
               onClick={onClose}
               className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50"
             >
-              Annuler
+              Fermer
             </button>
             <button
               type="submit"
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+              disabled={saving}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
             >
-              <span>💾 Enregistrer</span>
+              <span>{saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}</span>
             </button>
           </div>
         </form>

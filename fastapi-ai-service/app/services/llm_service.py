@@ -1,9 +1,11 @@
+import os
 import requests
 import json
 
-# URL par défaut de l'instance locale Ollama (port 11434)
-OLLAMA_URL = "http://localhost:11434/api/generate"
-DEFAULT_MODEL = "llama3"  # ou mistral / llama3.2 / llama2 selon votre modèle installé
+# Ollama tourne en local sur Windows (port 11434), hors Docker.
+OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434/api/generate")
+DEFAULT_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
+OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120"))
 
 
 def generate_meeting_summary(speakers: list, decisions: list, tasks: list) -> str:
@@ -37,7 +39,7 @@ Règles :
             "prompt": prompt,
             "stream": False
         }
-        response = requests.post(OLLAMA_URL, json=payload, timeout=15)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT)
         if response.status_code == 200:
             result = response.json()
             return result.get("response", "").strip()
@@ -48,7 +50,11 @@ Règles :
     except Exception as e:
         # Fallback de secours si Ollama n'est pas lancé / accessible
         print(f"[LLM Service Warning] Ollama non joignable: {e}")
-        return f"Compte-rendu automatique : Réunion réunissant {', '.join(speakers) if speakers else 'l\'équipe'}. {len(decisions)} décision(s) validée(s) et {len(tasks)} tâche(s) planifiée(s)."
+        participants = ", ".join(speakers) if speakers else "l'équipe"
+        return (
+            f"Compte-rendu automatique : Réunion réunissant {participants}. "
+            f"{len(decisions)} décision(s) validée(s) et {len(tasks)} tâche(s) planifiée(s)."
+        )
 
 
 def generate_chat_response(question: str, context: str) -> str:
@@ -76,7 +82,7 @@ Règles de réponse :
             "prompt": prompt,
             "stream": False
         }
-        response = requests.post(OLLAMA_URL, json=payload, timeout=15)
+        response = requests.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT)
         if response.status_code == 200:
             result = response.json()
             return result.get("response", "").strip()

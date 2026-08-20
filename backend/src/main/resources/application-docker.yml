@@ -4,6 +4,9 @@ spring:
     username: ${MYSQL_USER:itchu}
     password: ${MYSQL_PASSWORD:itchu_secret}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 30000
+      initialization-fail-timeout: 60000
   jpa:
     hibernate:
       ddl-auto: validate
@@ -18,5 +21,14 @@ spring:
     locations: classpath:db/migration
 
 app:
+  jwt:
+    access-secret: ${JWT_ACCESS_SECRET:change-me-access-secret-min-32-chars-long!!}
+    refresh-secret: ${JWT_REFRESH_SECRET:change-me-refresh-secret-min-32-chars-long!}
+    access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+    refresh-expiration-ms: ${JWT_REFRESH_EXPIRATION_MS:604800000}
   seed:
     enabled: ${APP_SEED_ENABLED:true}
+  ai:
+    enabled: ${APP_AI_ENABLED:true}
+    service-url: ${IA_SERVICE_URL:http://host.docker.internal:8000}
+    internal-token: ${IA_SERVICE_INTERNAL_TOKEN:}

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { extractErrorMessage } from '../lib/api';
 
-export default function LoginPage({ onLoginSuccess }) {
-  const [credentials, setCredentials] = useState({ email: '', password: '' });
+export default function LoginPage({ onLoggedIn }) {
+  const { login } = useAuth();
+  const [credentials, setCredentials] = useState({ email: '', motDePasse: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -14,48 +17,17 @@ export default function LoginPage({ onLoginSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!credentials.email || !credentials.motDePasse) {
+      setError('Veuillez saisir des identifiants valides.');
+      return;
+    }
     setLoading(true);
     setError(null);
-
     try {
-      if (credentials.email && credentials.password) {
-        const emailLower = credentials.email.toLowerCase();
-
-        // Détection de l'Admin ou du Membre de l'équipe
-        let authenticatedUser;
-
-        if (emailLower.includes('admin')) {
-          // Profil Administrateur
-          authenticatedUser = {
-            id: 1,
-            nom: 'El Amrani',
-            prenom: 'Karim',
-            email: credentials.email,
-            role: 'ADMIN',
-            title: 'Chef de Service Informatique',
-            service: "Direction des Systèmes d'Information (CHU)"
-          };
-          localStorage.setItem('token', 'fake-jwt-token-admin');
-        } else {
-          // Profil Membre d'équipe (User)
-          authenticatedUser = {
-            id: 2,
-            nom: 'Alami',
-            prenom: 'Youssef',
-            email: credentials.email,
-            role: 'USER',
-            title: 'Ingénieur Réseaux & Systèmes',
-            service: "Service Infrastructure IT (CHU)"
-          };
-          localStorage.setItem('token', 'fake-jwt-token-user');
-        }
-
-        onLoginSuccess(authenticatedUser);
-      } else {
-        setError('Veuillez saisir des identifiants valides.');
-      }
+      await login(credentials.email.trim(), credentials.motDePasse);
+      if (onLoggedIn) onLoggedIn();
     } catch (err) {
-      setError('Échec de la connexion au serveur.');
+      setError(extractErrorMessage(err, 'Échec de la connexion. Vérifiez vos identifiants.'));
     } finally {
       setLoading(false);
     }
@@ -109,7 +81,7 @@ export default function LoginPage({ onLoginSuccess }) {
                 required
                 value={credentials.email}
                 onChange={handleChange}
-                placeholder="prenom.nom@chu.ma"
+                placeholder="prenom.nom@chu.local"
                 className="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all"
               />
             </div>
@@ -124,9 +96,9 @@ export default function LoginPage({ onLoginSuccess }) {
               <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔒</span>
               <input
                 type={showPassword ? 'text' : 'password'}
-                name="password"
+                name="motDePasse"
                 required
-                value={credentials.password}
+                value={credentials.motDePasse}
                 onChange={handleChange}
                 placeholder="••••••••"
                 className="w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-600 focus:bg-white transition-all"

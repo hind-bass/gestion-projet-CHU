@@ -16,6 +16,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -54,6 +55,7 @@ public class Task {
     private User responsable;
 
     @ElementCollection
+    @BatchSize(size = 32)
     @CollectionTable(name = "task_tags", joinColumns = @JoinColumn(name = "task_id"))
     @Column(name = "tag", length = 100)
     private List<String> tagsCompetences = new ArrayList<>();
@@ -150,7 +152,7 @@ public class Task {
     }
 
     public void setTagsCompetences(List<String> tagsCompetences) {
-        this.tagsCompetences = tagsCompetences;
+        this.tagsCompetences = tagsCompetences == null ? new ArrayList<>() : new ArrayList<>(tagsCompetences);
     }
 
     public Double getHeuresEstimees() {

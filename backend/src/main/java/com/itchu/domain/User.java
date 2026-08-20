@@ -13,6 +13,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -43,12 +44,16 @@ public class User {
     private Role role;
 
     @ElementCollection
+    @BatchSize(size = 32)
     @CollectionTable(name = "user_competences", joinColumns = @JoinColumn(name = "user_id"))
     @Column(name = "competence", length = 100)
     private List<String> competences = new ArrayList<>();
 
     @Column(name = "date_creation", nullable = false)
     private LocalDateTime dateCreation;
+
+    @Column(nullable = false)
+    private boolean actif = true;
 
     @PrePersist
     void onCreate() {
@@ -110,7 +115,7 @@ public class User {
     }
 
     public void setCompetences(List<String> competences) {
-        this.competences = competences;
+        this.competences = competences == null ? new ArrayList<>() : new ArrayList<>(competences);
     }
 
     public LocalDateTime getDateCreation() {
@@ -119,5 +124,13 @@ public class User {
 
     public void setDateCreation(LocalDateTime dateCreation) {
         this.dateCreation = dateCreation;
+    }
+
+    public boolean isActif() {
+        return actif;
+    }
+
+    public void setActif(boolean actif) {
+        this.actif = actif;
     }
 }

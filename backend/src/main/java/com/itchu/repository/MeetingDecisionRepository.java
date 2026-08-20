@@ -10,4 +10,6 @@ public interface MeetingDecisionRepository extends JpaRepository<MeetingDecision
     List<MeetingDecision> findByMeetingId(Long meetingId);
 
     long countByMeeting_Project_IdAndStatutTraiteFalse(Long projectId);
+
+    long countByStatutTraiteFalse();
 }

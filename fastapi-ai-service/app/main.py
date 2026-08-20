@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import meetings, chat
+from app.routers import meetings, chat, internal
 
 app = FastAPI(
     title="IT-CHU Manager - Module IA",
@@ -20,10 +20,16 @@ app.add_middleware(
 # Inclusions des routeurs
 app.include_router(meetings.router)
 app.include_router(chat.router)
+app.include_router(internal.router)
 
 @app.get("/", tags=["Health Check"])
 def health_check():
     return {
-        "status": "ok", 
-        "message": "Module IA FastAPI opérationnel"
+        "status": "ok",
+        "message": "Module IA FastAPI opérationnel (Ollama)",
     }
+
+
+@app.get("/health", tags=["Health Check"])
+def health():
+    return {"status": "ok"}

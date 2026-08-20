@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+import { iaChat } from '../lib/ia';
 
 export default function AIAssistantChat({ user }) {
   const [messages, setMessages] = useState([
@@ -51,23 +50,7 @@ export default function AIAssistantChat({ user }) {
 
     try {
       // Appel API FastAPI avec variable d'environnement
-      const response = await fetch(`${API_BASE_URL}/api/ai/chat/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          user_id: user?.id ? parseInt(user.id, 10) : 1, // Conversion explicite en int (Pydantic ChatRequest)
-          role: 'ADMIN',                               // Rôle Admin garanti
-          question: text
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur serveur: ${response.status}`);
-      }
-
-      const data = await response.json(); // Reçoit ChatResponse { answer, sources_count }
+      const data = await iaChat({ userId: user?.id, role: 'ADMIN', question: text });
 
       const aiMsg = {
         id: Date.now() + 1,

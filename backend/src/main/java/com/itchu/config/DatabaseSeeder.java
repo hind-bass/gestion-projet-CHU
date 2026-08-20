@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Set;
 
 @Component
-@Profile("docker")
+@Profile({"docker", "dev"})
 public class DatabaseSeeder implements ApplicationRunner {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseSeeder.class);
@@ -151,6 +151,7 @@ public class DatabaseSeeder implements ApplicationRunner {
         user.setRole(role);
         user.setCompetences(competences);
         user.setDateCreation(LocalDateTime.now().minusDays(90));
+        user.setActif(true);
         return user;
     }
 

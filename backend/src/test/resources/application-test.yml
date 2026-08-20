@@ -5,6 +5,7 @@ spring:
     username: sa
     password:
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: create-drop
     properties:
@@ -14,5 +15,14 @@ spring:
     enabled: false
 
 app:
+  jwt:
+    access-secret: test-access-secret-key-min-32-characters-long!!
+    refresh-secret: test-refresh-secret-key-min-32-characters-long!
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
   seed:
     enabled: false
+  ai:
+    enabled: false
+    service-url: http://localhost:8000
+    internal-token: ""

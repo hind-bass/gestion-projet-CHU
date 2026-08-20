@@ -1,4 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { listProjects } from '../api/projects';
+import { createTask } from '../api/tasks';
+import { listUsers } from '../api/users';
+import { extractErrorMessage } from '../lib/api';
+import { PRIORITY_VALUES } from '../lib/priority';
+import { fullName } from '../lib/labels';
 
 // Icônes SVG intégrées
 const CheckIcon = () => (
@@ -69,7 +75,23 @@ export default function AITaskValidation({
   const [proposedTasks, setProposedTasks] = useState(initialTasks);
   const [editingTaskId, setEditingTaskId] = useState(null);
   const [editFormData, setEditFormData] = useState({});
-  const [filter, setFilter] = useState('TOUS'); // 'TOUS', 'EN_ATTENTE', 'VALIDE', 'REJETE'
+  const [filter, setFilter] = useState('TOUS');
+  const [projects, setProjects] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [injectError, setInjectError] = useState('');
+
+  useEffect(() => {
+    setProposedTasks(initialTasks || []);
+  }, [initialTasks]);
+
+  useEffect(() => {
+    Promise.all([listProjects(), listUsers()])
+      .then(([projectList, userList]) => {
+        setProjects(Array.isArray(projectList) ? projectList : []);
+        setUsers(Array.isArray(userList) ? userList : []);
+      })
+      .catch(() => {});
+  }, []);
 
   // Changement de statut
   const handleUpdateStatus = (id, newStatus) => {
@@ -101,16 +123,31 @@ export default function AITaskValidation({
     setProposedTasks(prev => prev.map(t => ({ ...t, statutValidation: 'REJETE' })));
   };
 
-  const handleInjectValidatedTasks = () => {
+  const handleInjectValidatedTasks = async () => {
     const validated = proposedTasks.filter(t => t.statutValidation === 'VALIDE');
     if (validated.length === 0) {
       alert('Aucune tâche validée à intégrer.');
       return;
     }
-    if (onInjectTasks) {
-      onInjectTasks(validated);
+    setInjectError('');
+    try {
+      for (const task of validated) {
+        const project = projects.find((p) => String(p.id) === String(task.projet) || p.nom === task.projet) || projects[0];
+        const assignee = users.find((u) => fullName(u) === task.assigneA || String(u.id) === String(task.assigneA));
+        await createTask({
+          projectId: project?.id,
+          titre: task.titre,
+          statut: 'A_FAIRE',
+          priorite: PRIORITY_VALUES[task.priorite] || 2,
+          echeance: task.dateEcheance || null,
+          responsableId: assignee?.id || null,
+        });
+      }
+      if (onInjectTasks) onInjectTasks(validated);
+      alert(`${validated.length} tâche(s) créée(s) dans le projet.`);
+    } catch (err) {
+      setInjectError(extractErrorMessage(err, 'Injection des tâches impossible.'));
     }
-    alert(`${validated.length} tâche(s) validée(s) avec succès et intégrée(s) au projet !`);
   };
 
   // Compteurs
@@ -142,7 +179,9 @@ export default function AITaskValidation({
 
   return (
     <div className="space-y-5 text-slate-800">
-      {/* En-tête de contrôle */}
+      {injectError && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-medium">{injectError}</div>
+      )}
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">

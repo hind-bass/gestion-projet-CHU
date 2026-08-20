@@ -1,4 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { listNotifications, markAllNotificationsRead } from '../api/notifications';
+import { listUsers } from '../api/users';
+import { notificationTypeDetails, relativeTime } from '../lib/labels';
+
+const NOTIFICATIONS_POLL_MS = 60000;
 
 export default function AdminLayout({
   children,
@@ -21,12 +26,8 @@ export default function AdminLayout({
   const notificationRef = useRef(null);
   const projectDropdownRef = useRef(null);
 
-  // Liste factice des membres IT
-  const teamMembers = [
-    { id: 1, nom: 'Alami', prenom: 'Youssef' },
-    { id: 2, nom: 'Chraibi', prenom: 'Sanaa' },
-    { id: 3, nom: 'Benali', prenom: 'Karim' }
-  ];
+  // Membres IT récupérés depuis le backend
+  const [teamMembers, setTeamMembers] = useState([]);
 
   // Formulaire d'envoi de notification
   const [newNotification, setNewNotification] = useState({
@@ -34,6 +35,7 @@ export default function AdminLayout({
     title: '',
     message: ''
   });
+  const [sendNotice, setSendNotice] = useState('');
 
   // Liste des projets factices
   const projects = [
@@ -43,17 +45,39 @@ export default function AdminLayout({
     'Gestion Patient Mobile'
   ];
 
-  // Liste des notifications
-  const [notifications, setNotifications] = useState([
-    { id: 1, recipientId: 'all', title: 'Serveur principal', message: 'Surcharge CPU détectée', time: '5m', read: false },
-    { id: 2, recipientId: 2, title: 'Projet SI', message: 'Nouvelle tâche assignée', time: '1h', read: false },
-    { id: 3, recipientId: 'all', title: 'Sauvegarde', message: 'Sauvegarde réussie à 03:00', time: '3h', read: true }
-  ]);
+  // Notifications de l'administrateur connecté
+  const [notifications, setNotifications] = useState([]);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const unreadCount = notifications.filter(n => !n.lu).length;
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const loadNotifications = useCallback(async () => {
+    try {
+      const data = await listNotifications();
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch {
+      // Le bandeau reste silencieux en cas d'indisponibilité du backend.
+    }
+  }, []);
+
+  useEffect(() => {
+    loadNotifications();
+    const interval = setInterval(loadNotifications, NOTIFICATIONS_POLL_MS);
+    return () => clearInterval(interval);
+  }, [loadNotifications]);
+
+  useEffect(() => {
+    listUsers()
+      .then((users) => setTeamMembers(Array.isArray(users) ? users : []))
+      .catch(() => setTeamMembers([]));
+  }, []);
+
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, lu: true })));
+    try {
+      await markAllNotificationsRead();
+    } catch {
+      loadNotifications();
+    }
   };
 
   // Fermeture des popovers au clic à l'extérieur
@@ -70,23 +94,11 @@ export default function AdminLayout({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Soumission de notification
+  // Soumission de notification : l'API d'envoi descendant (admin → membres) n'existe pas encore.
   const handleSendNotification = (e) => {
     e.preventDefault();
     if (!newNotification.title.trim() || !newNotification.message.trim()) return;
-
-    const notificationToAdd = {
-      id: Date.now(),
-      recipientId: newNotification.recipientId === 'all' ? 'all' : Number(newNotification.recipientId),
-      title: newNotification.title,
-      message: newNotification.message,
-      time: 'À l’instant',
-      read: false
-    };
-
-    setNotifications([notificationToAdd, ...notifications]);
-    setNewNotification({ recipientId: 'all', title: '', message: '' });
-    setIsSendModalOpen(false);
+    setSendNotice("L'envoi de notifications vers les membres n'est pas encore exposé par le backend.");
   };
 
   const isTimelineActive = ['timeline', 'planning', 'chronologie'].includes(activeTab);
@@ -271,22 +283,22 @@ export default function AdminLayout({
                       <p className="p-4 text-center text-xs text-slate-400">Aucune notification</p>
                     ) : (
                       notifications.map((n) => {
-                        const recipient = teamMembers.find(m => m.id === n.recipientId);
+                        const details = notificationTypeDetails(n.type);
                         return (
                           <div 
                             key={n.id} 
                             className={`p-3 text-xs border-b border-slate-50 hover:bg-slate-50 transition-colors ${
-                              !n.read ? 'bg-blue-50/30' : ''
+                              !n.lu ? 'bg-blue-50/30' : ''
                             }`}
                           >
                             <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
-                              <span>{n.title}</span>
-                              <span className="text-[10px] text-slate-400">{n.time}</span>
+                              <span>{details.icon} {details.tag}</span>
+                              <span className="text-[10px] text-slate-400">{relativeTime(n.dateCreation)}</span>
                             </div>
                             <p className="text-slate-600">{n.message}</p>
-                            {n.recipientId !== 'all' && recipient && (
+                            {n.lienReference && (
                               <span className="inline-block mt-1 text-[10px] bg-purple-50 text-purple-700 font-medium px-1.5 py-0.5 rounded border border-purple-200">
-                                Pour : {recipient.prenom} {recipient.nom}
+                                🔗 {n.lienReference}
                               </span>
                             )}
                           </div>
@@ -332,7 +344,7 @@ export default function AdminLayout({
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-sm">Envoyer une notification</h3>
               <button 
-                onClick={() => setIsSendModalOpen(false)} 
+                onClick={() => { setIsSendModalOpen(false); setSendNotice(''); }} 
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
                 ✕
@@ -340,6 +352,12 @@ export default function AdminLayout({
             </div>
 
             <form onSubmit={handleSendNotification} className="p-4 space-y-3">
+              {sendNotice && (
+                <div className="p-2.5 bg-amber-50 border border-amber-200 text-amber-700 text-xs rounded-lg font-medium">
+                  {sendNotice}
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Destinataire</label>
                 <select
@@ -350,7 +368,7 @@ export default function AdminLayout({
                   <option value="all">Tous les membres</option>
                   {teamMembers.map((m) => (
                     <option key={m.id} value={m.id}>
-                      {m.prenom} {m.nom}
+                      {m.prenom} {m.nom} ({m.role})
                     </option>
                   ))}
                 </select>
@@ -383,7 +401,7 @@ export default function AdminLayout({
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setIsSendModalOpen(false)}
+                  onClick={() => { setIsSendModalOpen(false); setSendNotice(''); }}
                   className="px-3 py-1.5 border border-slate-300 text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 cursor-pointer"
                 >
                   Annuler

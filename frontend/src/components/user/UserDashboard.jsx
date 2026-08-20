@@ -1,19 +1,51 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { getMyStats } from '../../api/dashboard';
+import { extractErrorMessage } from '../../lib/api';
+import { dueDateLabel, fullName, TASK_STATUS_LABELS } from '../../lib/labels';
+import { priorityBadgeClass, priorityLabel } from '../../lib/priority';
+
+const EMPTY_STATS = {
+  myProjectsCount: 0,
+  activeTasksCount: 0,
+  todayMeetingsCount: 0,
+  weeklyPlannedHours: 0,
+  weeklyCapacityHours: 35,
+  weeklyChargePercent: 0,
+  urgentTasks: [],
+};
 
 export default function UserDashboard({ user, onNavigate }) {
-  // Données de démonstration du tableau de bord utilisateur
-  const stats = {
-    myProjectsCount: 3,
-    activeTasksCount: 5,
-    todayMeetingsCount: 1,
-    weeklyLoggedHours: 18,
-    weeklyPlannedHours: 31
-  };
+  const [stats, setStats] = useState(EMPTY_STATS);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
-  const urgentTasks = [
-    { id: 'TASK-102', title: 'Mise à jour des patchs de sécurité serveurs Web', project: 'Sécurisation DSI & Logs', priority: 'URGENTE', dueDate: 'Aujourd\'hui' },
-    { id: 'TASK-101', title: 'Configuration des VLANs - Bâtiment Chirurgie', project: 'Déploiement Réseau CHU', priority: 'HAUTE', dueDate: 'Demain' },
-  ];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError('');
+      try {
+        const data = await getMyStats();
+        if (!cancelled) setStats({ ...EMPTY_STATS, ...data, urgentTasks: data?.urgentTasks || [] });
+      } catch (err) {
+        if (!cancelled) setError(extractErrorMessage(err, 'Impossible de charger votre tableau de bord.'));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const capacity = stats.weeklyCapacityHours || 35;
+  const chargePercent = Math.round(stats.weeklyChargePercent || 0);
+  const plannedHours = Math.round((stats.weeklyPlannedHours || 0) * 10) / 10;
+  const remainingHours = Math.max(0, Math.round((capacity - plannedHours) * 10) / 10);
+  const urgentCount = stats.urgentTasks.filter((t) => priorityLabel(t.priorite) === 'URGENTE').length;
 
   return (
     <div className="space-y-6">
@@ -26,10 +58,10 @@ export default function UserDashboard({ user, onNavigate }) {
               Espace Membre DSI CHU
             </span>
             <h1 className="text-2xl font-bold mt-1">
-              Bonjour, {user?.prenom ? `${user.prenom} ${user.nom}` : 'Youssef Alami'} 👋
+              Bonjour, {fullName(user) || 'Membre IT'} 👋
             </h1>
             <p className="text-teal-100/80 text-xs mt-1">
-              {user?.title || 'Ingénieur Réseaux & Systèmes'} — {user?.service || 'Service Infrastructure IT (CHU)'}
+              {(user?.competences || []).join(' · ') || 'Service Informatique (CHU)'}
             </p>
           </div>
 
@@ -37,7 +69,7 @@ export default function UserDashboard({ user, onNavigate }) {
             <span className="text-2xl">⚡</span>
             <div>
               <p className="text-[10px] text-teal-200 uppercase font-bold">Charge cette semaine</p>
-              <p className="text-sm font-bold">{stats.weeklyPlannedHours}h / 35h (88%)</p>
+              <p className="text-sm font-bold">{plannedHours}h / {capacity}h ({chargePercent}%)</p>
             </div>
           </div>
         </div>
@@ -45,6 +77,12 @@ export default function UserDashboard({ user, onNavigate }) {
         {/* Halo décoratif */}
         <div className="absolute right-0 bottom-0 w-64 h-64 bg-teal-500/20 rounded-full blur-2xl pointer-events-none" />
       </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-medium">
+          {error}
+        </div>
+      )}
 
       {/* Cartes d'indicateurs clés */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -55,7 +93,7 @@ export default function UserDashboard({ user, onNavigate }) {
         >
           <div>
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Mes Projets</span>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{stats.myProjectsCount}</p>
+            <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : stats.myProjectsCount}</p>
             <span className="text-[10px] text-teal-600 font-medium">Affectations actives</span>
           </div>
           <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-base">
@@ -69,8 +107,10 @@ export default function UserDashboard({ user, onNavigate }) {
         >
           <div>
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tâches en cours</span>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{stats.activeTasksCount}</p>
-            <span className="text-[10px] text-amber-600 font-medium">2 prioritaires</span>
+            <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : stats.activeTasksCount}</p>
+            <span className="text-[10px] text-amber-600 font-medium">
+              {urgentCount > 0 ? `${urgentCount} urgente(s)` : 'Aucune urgence'}
+            </span>
           </div>
           <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base">
             ☑️
@@ -83,8 +123,8 @@ export default function UserDashboard({ user, onNavigate }) {
         >
           <div>
             <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Réunions aujourd'hui</span>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{stats.todayMeetingsCount}</p>
-            <span className="text-[10px] text-sky-600 font-medium">Prochaine à 10h00</span>
+            <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : stats.todayMeetingsCount}</p>
+            <span className="text-[10px] text-sky-600 font-medium">Voir mon planning</span>
           </div>
           <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center font-bold text-base">
             📅
@@ -96,9 +136,11 @@ export default function UserDashboard({ user, onNavigate }) {
           className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between cursor-pointer hover:border-emerald-400 transition-all"
         >
           <div>
-            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Temps saisi</span>
-            <p className="text-2xl font-bold text-slate-800 mt-1">{stats.weeklyLoggedHours}h</p>
-            <span className="text-[10px] text-emerald-600 font-medium">Sur 31h planifiées</span>
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Heures planifiées</span>
+            <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : `${plannedHours}h`}</p>
+            <span className="text-[10px] text-emerald-600 font-medium">
+              {remainingHours}h disponibles sur {capacity}h
+            </span>
           </div>
           <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-base">
             ⏱️
@@ -124,26 +166,29 @@ export default function UserDashboard({ user, onNavigate }) {
         </div>
 
         <div className="space-y-3">
-          {urgentTasks.map((task) => (
+          {loading && (
+            <div className="text-center py-8 text-xs text-slate-400">Chargement de vos tâches…</div>
+          )}
+
+          {!loading && stats.urgentTasks.map((task) => (
             <div 
               key={task.id}
               className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-teal-300 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-4"
             >
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-slate-400">{task.id}</span>
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${
-                    task.priority === 'URGENTE' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200'
-                  }`}>
-                    {task.priority}
+                  <span className="text-[10px] font-bold text-slate-400">TASK-{task.id}</span>
+                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${priorityBadgeClass(task.priorite)}`}>
+                    {priorityLabel(task.priorite)}
                   </span>
-                  <span className="text-[10px] text-slate-500">📁 {task.project}</span>
+                  <span className="text-[10px] text-slate-500">📁 {task.projectNom}</span>
+                  <span className="text-[10px] text-slate-400">{TASK_STATUS_LABELS[task.statut] || task.statut}</span>
                 </div>
-                <h3 className="text-xs font-bold text-slate-800">{task.title}</h3>
+                <h3 className="text-xs font-bold text-slate-800">{task.titre}</h3>
               </div>
 
               <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 shrink-0">
-                <span className="text-[11px] font-medium text-slate-500">⏳ {task.dueDate}</span>
+                <span className="text-[11px] font-medium text-slate-500">⏳ {dueDateLabel(task.echeance)}</span>
                 <button 
                   onClick={() => onNavigate && onNavigate('tasks')}
                   className="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs transition-all active:scale-95 shadow-xs"
@@ -153,6 +198,12 @@ export default function UserDashboard({ user, onNavigate }) {
               </div>
             </div>
           ))}
+
+          {!loading && stats.urgentTasks.length === 0 && !error && (
+            <div className="text-center py-8 text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
+              Aucune tâche prioritaire pour le moment. 🎉
+            </div>
+          )}
         </div>
       </div>
 

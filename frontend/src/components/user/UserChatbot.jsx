@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+import { iaChat } from '../../lib/ia';
 
 export default function UserChatbot({ user }) {
   const [messages, setMessages] = useState([
@@ -47,25 +46,11 @@ export default function UserChatbot({ user }) {
 
     try {
       // 1. URL alignée avec la route FastAPI (/api/ai/chat/)
-      const response = await fetch(`${API_BASE_URL}/api/ai/chat/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // 2. Payload JSON strictement conforme au schéma ChatRequest (Pydantic)
-        body: JSON.stringify({
-          user_id: user?.id ? parseInt(user.id, 10) : 1, // Entier obligatoire (int)
-          role: user?.role === 'ADMIN' ? 'ADMIN' : 'MEMBRE', // Chaîne "ADMIN" ou "MEMBRE"
-          question: text // Requis par Pydantic au lieu de "message"
-        }),
+      const data = await iaChat({
+        userId: user?.id,
+        role: user?.role === 'ADMIN' ? 'ADMIN' : 'MEMBRE',
+        question: text,
       });
-
-      if (!response.ok) {
-        throw new Error(`Erreur serveur (${response.status})`);
-      }
-
-      // 3. Réception de la réponse ChatResponse { answer, sources_count }
-      const data = await response.json();
 
       const botMsg = {
         id: Date.now() + 1,
