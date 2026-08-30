@@ -5,31 +5,7 @@ import { listUsers } from '../api/users';
 import { extractErrorMessage } from '../lib/api';
 import { PRIORITY_VALUES } from '../lib/priority';
 import { fullName } from '../lib/labels';
-
-// Icônes SVG intégrées
-const CheckIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-  </svg>
-);
-
-const CrossIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-const EditIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-  </svg>
-);
-
-const SparklesIcon = () => (
-  <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-  </svg>
-);
+import Icon from './icons/Icon';
 
 export default function AITaskValidation({
   initialTasks = [
@@ -185,7 +161,7 @@ export default function AITaskValidation({
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <SparklesIcon /> Validation des Tâches IA
+            <Icon name="sparkles" className="w-4 h-4 text-indigo-600" /> Validation des Tâches IA
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
             Révisez, ajustez ou validez les actions suggérées automatiquement par l'IA.
@@ -205,7 +181,7 @@ export default function AITaskValidation({
                 onClick={handleValidateAll}
                 className="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs px-3 py-2 rounded-lg font-semibold transition-colors flex items-center gap-1.5"
               >
-                <CheckIcon /> Tout Approuver ({pendingCount})
+                <Icon name="check" className="w-3.5 h-3.5" /> Tout Approuver ({pendingCount})
               </button>
             </>
           )}
@@ -316,19 +292,19 @@ export default function AITaskValidation({
                             onClick={() => handleStartEdit(task)}
                             className="px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-1"
                           >
-                            <EditIcon /> Modifier
+                            <Icon name="pencil" className="w-3.5 h-3.5" /> Modifier
                           </button>
                           <button
                             onClick={() => handleUpdateStatus(task.id, 'REJETE')}
                             className="px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 border border-red-200 rounded-lg transition-colors flex items-center gap-1"
                           >
-                            <CrossIcon /> Rejeter
+                            <Icon name="x" className="w-3.5 h-3.5" /> Rejeter
                           </button>
                           <button
                             onClick={() => handleUpdateStatus(task.id, 'VALIDE')}
                             className="px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm transition-colors flex items-center gap-1"
                           >
-                            <CheckIcon /> Valider
+                            <Icon name="check" className="w-3.5 h-3.5" /> Valider
                           </button>
                         </>
                       )}
@@ -336,7 +312,7 @@ export default function AITaskValidation({
                       {task.statutValidation === 'VALIDE' && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-emerald-700 bg-emerald-100/80 border border-emerald-200 px-3 py-1 rounded-full flex items-center gap-1">
-                            <CheckIcon /> Validée
+                            <Icon name="check" className="w-3.5 h-3.5" /> Validée
                           </span>
                           <button
                             onClick={() => handleUpdateStatus(task.id, 'EN_ATTENTE')}
@@ -350,7 +326,7 @@ export default function AITaskValidation({
                       {task.statutValidation === 'REJETE' && (
                         <div className="flex items-center gap-2">
                           <span className="text-xs font-bold text-slate-600 bg-slate-200 border border-slate-300 px-3 py-1 rounded-full flex items-center gap-1">
-                            <CrossIcon /> Rejetée
+                            <Icon name="x" className="w-3.5 h-3.5" /> Rejetée
                           </span>
                           <button
                             onClick={() => handleUpdateStatus(task.id, 'EN_ATTENTE')}

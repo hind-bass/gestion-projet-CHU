@@ -5,6 +5,7 @@ import {
   markAllNotificationsRead,
 } from '../api/notifications';
 import { extractErrorMessage } from '../lib/api';
+import Icon from '../components/icons/Icon';
 import { notificationTypeDetails, relativeTime } from '../lib/labels';
 
 const NOTIFICATIONS_POLL_MS = 60000;
@@ -130,31 +131,31 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
             </p>
             <nav className="space-y-1">
               <SidebarItem 
-                icon="📊" 
+                icon="layout-dashboard" 
                 label="Mon Tableau de Bord" 
                 active={activeTab === 'dashboard'} 
                 onClick={() => setActiveTab('dashboard')} 
               />
               <SidebarItem 
-                icon="📁" 
+                icon="folder" 
                 label="Mes Projets" 
                 active={activeTab === 'projects'} 
                 onClick={() => setActiveTab('projects')} 
               />
               <SidebarItem 
-                icon="☑️" 
+                icon="square-check-big" 
                 label="Mes Tâches & Kanban" 
                 active={activeTab === 'tasks' || activeTab === 'kanban'} 
                 onClick={() => setActiveTab('tasks')} 
               />
               <SidebarItem 
-                icon="📅" 
+                icon="calendar-days" 
                 label="Réunions & Planning" 
                 active={activeTab === 'meetings'} 
                 onClick={() => setActiveTab('meetings')} 
               />
               <SidebarItem 
-                icon="⚡" 
+                icon="zap" 
                 label="Ma Charge de travail" 
                 active={activeTab === 'workload'} 
                 onClick={() => setActiveTab('workload')} 
@@ -170,7 +171,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <span>🔔</span>
+                  <Icon name="bell" className="w-4 h-4" />
                   <span>Notifications</span>
                 </div>
                 {unreadCount > 0 && (
@@ -181,7 +182,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
               </button>
 
               <SidebarItem 
-                icon="🤖" 
+                icon="bot" 
                 label="Assistant IA (Projets)" 
                 active={activeTab === 'chatbot'} 
                 onClick={() => setActiveTab('chatbot')} 
@@ -203,7 +204,9 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
               <p className="text-xs font-semibold text-slate-800 truncate">
                 {user ? `${user.prenom} ${user.nom}` : 'Membre IT'}
               </p>
-              <p className="text-[10px] text-teal-600 font-medium">Gérer mon profil ⚙️</p>
+              <p className="text-[10px] text-teal-600 font-medium inline-flex items-center gap-1">
+                Gérer mon profil <Icon name="settings" className="w-3 h-3" />
+              </p>
             </div>
           </div>
         </div>
@@ -218,7 +221,9 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
           {/* Recherche */}
           <div className="flex items-center gap-6">
             <div className="relative w-64">
-              <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+              <span className="absolute left-3 top-2.5 text-slate-400">
+                <Icon name="search" className="w-3.5 h-3.5" />
+              </span>
               <input 
                 type="text" 
                 value={searchQuery}
@@ -231,7 +236,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600 cursor-pointer"
                 >
-                  ✕
+                  <Icon name="x" className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -245,7 +250,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
               onClick={() => setIsSendNotifOpen(true)}
               className="flex items-center gap-1.5 bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 px-3 py-1.5 rounded-md font-semibold text-xs transition-all active:scale-95 cursor-pointer"
             >
-              <span>📨</span>
+              <Icon name="send" className="w-4 h-4" />
               <span>Alerter l'Admin</span>
             </button>
 
@@ -257,7 +262,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className="relative text-slate-500 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                🔔
+                <Icon name="bell" className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-amber-500 rounded-full ring-2 ring-white" />
                 )}
@@ -292,11 +297,11 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                             }`}
                           >
                             <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
-                              <span className={
+                              <span className={`inline-flex items-center gap-1 ${
                                 details.kind === 'danger' ? 'text-red-600' :
                                 details.kind === 'warning' ? 'text-amber-600' : 'text-teal-600'
-                              }>
-                                {details.icon} {details.tag}
+                              }`}>
+                                <Icon name={details.icon} className="w-3.5 h-3.5" /> {details.tag}
                               </span>
                               <span className="text-[10px] text-slate-400">{relativeTime(n.dateCreation)}</span>
                             </div>
@@ -313,9 +318,10 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                         setIsNotificationsOpen(false);
                         setActiveTab('notifications');
                       }}
-                      className="text-xs font-bold text-teal-700 hover:underline cursor-pointer"
+                      className="text-xs font-bold text-teal-700 hover:underline cursor-pointer inline-flex items-center gap-1"
                     >
-                      Ouvrir le centre de notifications ➔
+                      Ouvrir le centre de notifications
+                      <Icon name="arrow-right" className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -329,7 +335,7 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
               onClick={onLogout}
               className="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 px-3 py-1.5 rounded-md font-semibold text-xs transition-all active:scale-95 cursor-pointer"
             >
-              <span>🚪</span>
+              <Icon name="log-out" className="w-4 h-4" />
               <span>Déconnexion</span>
             </button>
 
@@ -350,21 +356,21 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
             {/* Header Modal */}
             <div className="p-4 bg-slate-800 text-white flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <span className="text-lg">📨</span>
+                <Icon name="send" className="w-5 h-5" />
                 <h3 className="font-bold text-sm">Envoyer une notification à l'Admin</h3>
               </div>
               <button 
                 onClick={() => setIsSendNotifOpen(false)}
-                className="text-slate-400 hover:text-white text-sm font-bold cursor-pointer"
+                className="text-slate-400 hover:text-white cursor-pointer"
               >
-                ✕
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
 
             {/* Corps Modal */}
             {sentSuccess ? (
               <div className="p-8 text-center space-y-3">
-                <span className="text-4xl block animate-bounce">✅</span>
+                <Icon name="circle-check" className="w-10 h-10 text-emerald-600 mx-auto animate-bounce" />
                 <p className="font-bold text-slate-800 text-sm">Notification envoyée avec succès !</p>
                 <p className="text-xs text-slate-500">L'administrateur recevra votre message immédiatement.</p>
               </div>
@@ -385,9 +391,9 @@ export default function UserLayout({ children, user, activeTab, setActiveTab, on
                     onChange={(e) => setNotifPriority(e.target.value)}
                     className="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 cursor-pointer"
                   >
-                    <option value="INFO">ℹ️ Information simple</option>
-                    <option value="WARNING">⚠️ Bloquant / Besoin d'aide</option>
-                    <option value="URGENT">🚨 Urgent / Incident majeur</option>
+                    <option value="INFO">Information simple</option>
+                    <option value="WARNING">Bloquant / Besoin d'aide</option>
+                    <option value="URGENT">Urgent / Incident majeur</option>
                   </select>
                 </div>
 
@@ -456,7 +462,7 @@ function SidebarItem({ icon, label, active = false, onClick }) {
           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
-      <span>{icon}</span>
+      <Icon name={icon} className="w-4 h-4" />
       <span>{label}</span>
     </button>
   );

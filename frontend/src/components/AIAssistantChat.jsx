@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { iaChat } from '../lib/ia';
+import Icon from './icons/Icon';
 
 export default function AIAssistantChat({ user }) {
   const [messages, setMessages] = useState([
@@ -66,7 +67,7 @@ export default function AIAssistantChat({ user }) {
       const errorMsg = {
         id: Date.now() + 1,
         sender: 'ai',
-        text: "⚠️ Impossible de contacter le service IA. Vérifiez que le serveur FastAPI est bien démarré.",
+        text: "Impossible de contacter le service IA. Vérifiez que le serveur FastAPI est bien démarré.",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -81,14 +82,14 @@ export default function AIAssistantChat({ user }) {
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs flex justify-between items-center">
         <div>
           <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <span>🤖</span> Assistant Virtuel IT & Décisionnel
+            <Icon name="bot" className="w-5 h-5" /> Assistant Virtuel IT & Décisionnel
           </h1>
           <p className="text-xs text-slate-500 mt-1">
             Posez des questions sur vos projets, l'état des tâches, les réunions et la charge de vos équipes.
           </p>
         </div>
-        <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200">
-          ● Modèle Connecté (RAG SI CHU)
+        <span className="text-xs font-semibold bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-full border border-indigo-200 inline-flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-indigo-600" /> Modèle Connecté (RAG SI CHU)
         </span>
       </div>
 
@@ -97,12 +98,14 @@ export default function AIAssistantChat({ user }) {
         
         {/* En-tête du Chat */}
         <div className="p-3.5 bg-slate-50 border-b border-slate-200 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-            🤖
+          <div className="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+            <Icon name="bot" className="w-4 h-4" />
           </div>
           <div>
             <p className="text-xs font-bold text-slate-800">Copilote SI-CHU (Admin)</p>
-            <p className="text-[10px] text-emerald-600 font-medium">● Actif • Synchro FastAPI & LLM OK</p>
+            <p className="text-[10px] text-emerald-600 font-medium inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> Actif • Synchro FastAPI & LLM OK
+            </p>
           </div>
         </div>
 
@@ -115,8 +118,8 @@ export default function AIAssistantChat({ user }) {
             >
               <div className="flex items-end gap-2 max-w-[80%]">
                 {msg.sender === 'ai' && (
-                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white text-[10px] flex items-center justify-center shrink-0 mb-1">
-                    🤖
+                  <div className="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center shrink-0 mb-1">
+                    <Icon name="bot" className="w-3.5 h-3.5" />
                   </div>
                 )}
                 <div
@@ -131,7 +134,7 @@ export default function AIAssistantChat({ user }) {
                   {/* Affichage des sources consultées par le RAG */}
                   {msg.sender === 'ai' && msg.sourcesCount !== undefined && (
                     <div className="mt-2 text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md w-fit font-sans flex items-center gap-1">
-                      <span>📚</span>
+                      <Icon name="book-open" className="w-3 h-3" />
                       <span>{msg.sourcesCount} document(s) BDD analysé(s)</span>
                     </div>
                   )}
@@ -145,7 +148,9 @@ export default function AIAssistantChat({ user }) {
 
           {isTyping && (
             <div className="flex items-center gap-2 text-indigo-600 text-xs italic font-medium p-2.5 bg-white rounded-xl border border-slate-200 w-fit">
-              <span className="animate-pulse">🤖 L'assistant consulte la base de connaissances FastAPI / Ollama...</span>
+              <span className="animate-pulse inline-flex items-center gap-1.5">
+                <Icon name="bot" className="w-3.5 h-3.5" /> L'assistant consulte la base de connaissances FastAPI / Ollama...
+              </span>
             </div>
           )}
           <div ref={messagesEndRef} />
@@ -160,7 +165,9 @@ export default function AIAssistantChat({ user }) {
               disabled={isTyping}
               className="text-[11px] bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200 border border-slate-200 text-slate-600 px-3 py-1.5 rounded-full whitespace-nowrap transition-colors disabled:opacity-50 cursor-pointer"
             >
-              💡 {q}
+              <span className="inline-flex items-center gap-1">
+                <Icon name="lightbulb" className="w-3 h-3" /> {q}
+              </span>
             </button>
           ))}
         </div>
@@ -183,9 +190,10 @@ export default function AIAssistantChat({ user }) {
           <button
             type="submit"
             disabled={!inputQuery.trim() || isTyping}
-            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition-colors shadow-xs cursor-pointer"
+            className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-5 py-2.5 rounded-xl text-xs font-semibold transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5"
           >
-            Envoyer ➔
+            Envoyer
+            <Icon name="arrow-right" className="w-4 h-4" />
           </button>
         </form>
 

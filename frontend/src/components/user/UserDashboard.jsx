@@ -3,6 +3,7 @@ import { getMyStats } from '../../api/dashboard';
 import { extractErrorMessage } from '../../lib/api';
 import { dueDateLabel, fullName, TASK_STATUS_LABELS } from '../../lib/labels';
 import { priorityBadgeClass, priorityLabel } from '../../lib/priority';
+import Icon from '../icons/Icon';
 
 const EMPTY_STATS = {
   myProjectsCount: 0,
@@ -58,7 +59,7 @@ export default function UserDashboard({ user, onNavigate }) {
               Espace Membre DSI CHU
             </span>
             <h1 className="text-2xl font-bold mt-1">
-              Bonjour, {fullName(user) || 'Membre IT'} 👋
+              Bonjour, {fullName(user) || 'Membre IT'} <Icon name="hand" className="w-6 h-6 inline-block align-middle" />
             </h1>
             <p className="text-teal-100/80 text-xs mt-1">
               {(user?.competences || []).join(' · ') || 'Service Informatique (CHU)'}
@@ -66,7 +67,7 @@ export default function UserDashboard({ user, onNavigate }) {
           </div>
 
           <div className="flex items-center gap-3 bg-white/10 backdrop-blur-md px-4 py-2.5 rounded-xl border border-white/10">
-            <span className="text-2xl">⚡</span>
+            <Icon name="zap" className="w-6 h-6" />
             <div>
               <p className="text-[10px] text-teal-200 uppercase font-bold">Charge cette semaine</p>
               <p className="text-sm font-bold">{plannedHours}h / {capacity}h ({chargePercent}%)</p>
@@ -96,8 +97,8 @@ export default function UserDashboard({ user, onNavigate }) {
             <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : stats.myProjectsCount}</p>
             <span className="text-[10px] text-teal-600 font-medium">Affectations actives</span>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold text-base">
-            📁
+          <div className="w-10 h-10 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center">
+            <Icon name="folder" className="w-5 h-5" />
           </div>
         </div>
 
@@ -112,8 +113,8 @@ export default function UserDashboard({ user, onNavigate }) {
               {urgentCount > 0 ? `${urgentCount} urgente(s)` : 'Aucune urgence'}
             </span>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center font-bold text-base">
-            ☑️
+          <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center">
+            <Icon name="square-check-big" className="w-5 h-5" />
           </div>
         </div>
 
@@ -126,8 +127,8 @@ export default function UserDashboard({ user, onNavigate }) {
             <p className="text-2xl font-bold text-slate-800 mt-1">{loading ? '…' : stats.todayMeetingsCount}</p>
             <span className="text-[10px] text-sky-600 font-medium">Voir mon planning</span>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center font-bold text-base">
-            📅
+          <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center">
+            <Icon name="calendar-days" className="w-5 h-5" />
           </div>
         </div>
 
@@ -142,8 +143,8 @@ export default function UserDashboard({ user, onNavigate }) {
               {remainingHours}h disponibles sur {capacity}h
             </span>
           </div>
-          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-base">
-            ⏱️
+          <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center">
+            <Icon name="timer" className="w-5 h-5" />
           </div>
         </div>
 
@@ -161,7 +162,7 @@ export default function UserDashboard({ user, onNavigate }) {
             className="text-xs font-semibold text-teal-600 hover:text-teal-700 hover:underline transition-colors flex items-center gap-1"
           >
             <span>Voir tout le Kanban</span>
-            <span>➔</span>
+            <Icon name="arrow-right" className="w-3.5 h-3.5" />
           </button>
         </div>
 
@@ -181,14 +182,18 @@ export default function UserDashboard({ user, onNavigate }) {
                   <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${priorityBadgeClass(task.priorite)}`}>
                     {priorityLabel(task.priorite)}
                   </span>
-                  <span className="text-[10px] text-slate-500">📁 {task.projectNom}</span>
+                  <span className="text-[10px] text-slate-500 inline-flex items-center gap-1">
+                    <Icon name="folder" className="w-3 h-3" /> {task.projectNom}
+                  </span>
                   <span className="text-[10px] text-slate-400">{TASK_STATUS_LABELS[task.statut] || task.statut}</span>
                 </div>
                 <h3 className="text-xs font-bold text-slate-800">{task.titre}</h3>
               </div>
 
               <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 shrink-0">
-                <span className="text-[11px] font-medium text-slate-500">⏳ {dueDateLabel(task.echeance)}</span>
+                <span className="text-[11px] font-medium text-slate-500 inline-flex items-center gap-1">
+                  <Icon name="hourglass" className="w-3.5 h-3.5" /> {dueDateLabel(task.echeance)}
+                </span>
                 <button 
                   onClick={() => onNavigate && onNavigate('tasks')}
                   className="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-1.5 rounded-lg text-xs transition-all active:scale-95 shadow-xs"
@@ -200,8 +205,8 @@ export default function UserDashboard({ user, onNavigate }) {
           ))}
 
           {!loading && stats.urgentTasks.length === 0 && !error && (
-            <div className="text-center py-8 text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg">
-              Aucune tâche prioritaire pour le moment. 🎉
+            <div className="text-center py-8 text-xs text-slate-400 border border-dashed border-slate-200 rounded-lg inline-flex items-center justify-center gap-1.5 w-full">
+              Aucune tâche prioritaire pour le moment. <Icon name="party-popper" className="w-4 h-4" />
             </div>
           )}
         </div>

@@ -1,6 +1,7 @@
 import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { listNotifications, markAllNotificationsRead } from '../api/notifications';
 import { listUsers } from '../api/users';
+import Icon from '../components/icons/Icon';
 import { notificationTypeDetails, relativeTime } from '../lib/labels';
 
 const NOTIFICATIONS_POLL_MS = 60000;
@@ -130,31 +131,31 @@ export default function AdminLayout({
             </p>
             <nav className="space-y-1">
               <SidebarItem 
-                icon="📊" 
+                icon="layout-dashboard" 
                 label="Dashboard Global" 
                 active={activeTab === 'dashboard'} 
                 onClick={() => setActiveTab('dashboard')} 
               />
               <SidebarItem 
-                icon="📋" 
+                icon="square-kanban" 
                 label="Tableau Kanban" 
                 active={activeTab === 'kanban'} 
                 onClick={() => setActiveTab('kanban')} 
               />
               <SidebarItem 
-                icon="☑️" 
+                icon="square-check-big" 
                 label="Liste des Tâches" 
                 active={activeTab === 'tasks'} 
                 onClick={() => setActiveTab('tasks')} 
               />
               <SidebarItem 
-                icon="📅" 
+                icon="calendar-days" 
                 label="Chronologie / Planning" 
                 active={isTimelineActive} 
                 onClick={() => setActiveTab('timeline')} 
               />
               <SidebarItem 
-                icon="🤝" 
+                icon="handshake" 
                 label="Réunions & IA" 
                 active={activeTab === 'meetings'} 
                 onClick={() => setActiveTab('meetings')} 
@@ -169,25 +170,25 @@ export default function AdminLayout({
             </p>
             <nav className="space-y-1">
               <SidebarItem 
-                icon="📁" 
+                icon="folder" 
                 label="Gestion Projets" 
                 active={activeTab === 'projects'} 
                 onClick={() => setActiveTab('projects')} 
               />
               <SidebarItem 
-                icon="👥" 
+                icon="users" 
                 label="Gestion Équipe" 
                 active={activeTab === 'team'} 
                 onClick={() => setActiveTab('team')} 
               />
               <SidebarItem 
-                icon="📜" 
+                icon="scroll-text" 
                 label="Journal d'audit (Logs)" 
                 active={activeTab === 'logs'} 
                 onClick={() => setActiveTab('logs')} 
               />
               <SidebarItem 
-                icon="🤖" 
+                icon="bot" 
                 label="Assistant Chatbot" 
                 active={['chatbot', 'chat', 'assistant'].includes(activeTab)} 
                 onClick={() => setActiveTab('chatbot')}
@@ -207,7 +208,9 @@ export default function AdminLayout({
 
             {/* Barre de Recherche */}
             <div className="relative w-64">
-              <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+              <span className="absolute left-3 top-2.5 text-slate-400">
+                <Icon name="search" className="w-3.5 h-3.5" />
+              </span>
               <input 
                 type="text" 
                 value={searchQuery}
@@ -220,7 +223,7 @@ export default function AdminLayout({
                   onClick={() => setSearchQuery('')}
                   className="absolute right-2.5 top-2 text-xs text-slate-400 hover:text-slate-600"
                 >
-                  ✕
+                  <Icon name="x" className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
@@ -234,7 +237,7 @@ export default function AdminLayout({
               onClick={onLogout}
               className="flex items-center gap-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 px-3.5 py-1.5 rounded-md font-semibold text-sm transition-all active:scale-95 shadow-xs cursor-pointer"
             >
-              <span>🚪</span>
+              <Icon name="log-out" className="w-4 h-4" />
               <span>Déconnexion</span>
             </button>
 
@@ -246,7 +249,7 @@ export default function AdminLayout({
                 onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
                 className="relative text-slate-500 hover:text-slate-700 p-2 rounded-full hover:bg-slate-100 transition-colors cursor-pointer"
               >
-                🔔
+                <Icon name="bell" className="w-5 h-5" />
                 {unreadCount > 0 && (
                   <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
                 )}
@@ -265,7 +268,9 @@ export default function AdminLayout({
                         }}
                         className="text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-2 py-0.5 rounded transition-colors cursor-pointer"
                       >
-                        ➕ Envoyer
+                        <span className="inline-flex items-center gap-1">
+                          <Icon name="plus" className="w-3 h-3" /> Envoyer
+                        </span>
                       </button>
                       {unreadCount > 0 && (
                         <button 
@@ -292,13 +297,15 @@ export default function AdminLayout({
                             }`}
                           >
                             <div className="flex justify-between font-semibold text-slate-800 mb-0.5">
-                              <span>{details.icon} {details.tag}</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Icon name={details.icon} className="w-3.5 h-3.5" /> {details.tag}
+                              </span>
                               <span className="text-[10px] text-slate-400">{relativeTime(n.dateCreation)}</span>
                             </div>
                             <p className="text-slate-600">{n.message}</p>
                             {n.lienReference && (
-                              <span className="inline-block mt-1 text-[10px] bg-purple-50 text-purple-700 font-medium px-1.5 py-0.5 rounded border border-purple-200">
-                                🔗 {n.lienReference}
+                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] bg-purple-50 text-purple-700 font-medium px-1.5 py-0.5 rounded border border-purple-200">
+                                <Icon name="link" className="w-3 h-3" /> {n.lienReference}
                               </span>
                             )}
                           </div>
@@ -347,7 +354,7 @@ export default function AdminLayout({
                 onClick={() => { setIsSendModalOpen(false); setSendNotice(''); }} 
                 className="text-slate-400 hover:text-slate-600 cursor-pointer"
               >
-                ✕
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
 
@@ -432,7 +439,7 @@ function SidebarItem({ icon, label, active = false, onClick }) {
           : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
       }`}
     >
-      <span>{icon}</span>
+      <Icon name={icon} className="w-4 h-4" />
       <span>{label}</span>
     </button>
   );

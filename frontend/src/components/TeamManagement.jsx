@@ -3,6 +3,7 @@ import { addProjectMember, listProjects, removeProjectMember } from '../api/proj
 import { activateUser, createUser, deactivateUser, listUsers, updateUser } from '../api/users';
 import { extractErrorMessage } from '../lib/api';
 import { fullName, roleLabel } from '../lib/labels';
+import Icon from './icons/Icon';
 
 const EMPTY_FORM = {
   nom: '',
@@ -161,9 +162,9 @@ export default function TeamManagement() {
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-1.5"
         >
-          + Nouveau Membre
+          <Icon name="plus" className="w-4 h-4" /> Nouveau Membre
         </button>
       </div>
 
@@ -257,109 +258,118 @@ export default function TeamManagement() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden">
-            <div className="flex justify-between items-center p-4 border-b border-slate-100">
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col my-auto">
+            <div className="flex justify-between items-center p-4 border-b border-slate-100 shrink-0">
               <h3 className="font-bold text-slate-800 text-base">
                 {editingMember ? 'Modifier le membre' : 'Créer un compte membre'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <Icon name="x" className="w-4 h-4" />
+              </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Prénom</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.prenom}
-                    onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Nom</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.nom}
-                    onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
-              </div>
-
-              {!editingMember && (
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">Mot de passe</label>
-                  <div className="relative">
+            <form onSubmit={handleSubmit} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Prénom</label>
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type="text"
                       required
-                      minLength={8}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm"
+                      value={formData.prenom}
+                      onChange={(e) => setFormData({ ...formData, prenom: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
                     />
-                    <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-xs text-slate-400">
-                      {showPassword ? 'Masquer' : 'Voir'}
-                    </button>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Nom</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.nom}
+                      onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                    />
                   </div>
                 </div>
-              )}
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Rôle</label>
-                <select
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
-                >
-                  <option value="MEMBRE">Membre d'équipe</option>
-                  <option value="ADMIN">Administrateur</option>
-                </select>
-              </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
 
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Compétences (séparées par des virgules)</label>
-                <input
-                  type="text"
-                  value={formData.competences}
-                  onChange={(e) => setFormData({ ...formData, competences: e.target.value })}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-800 mb-2">Affecter aux projets</label>
-                <div className="space-y-2 max-h-36 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  {projects.map((project) => (
-                    <label key={project.id} className="flex items-center gap-3 cursor-pointer text-xs text-slate-700">
+                {!editingMember && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 mb-1">Mot de passe</label>
+                    <div className="relative">
                       <input
-                        type="checkbox"
-                        checked={formData.projetsAffectes.includes(project.id)}
-                        onChange={() => handleProjectToggle(project.id)}
-                        className="rounded border-slate-300 text-blue-600"
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full px-3 py-2 pr-10 border border-slate-300 rounded-lg text-sm"
                       />
-                      <span>{project.nom}</span>
-                    </label>
-                  ))}
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+                        title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                      >
+                        {showPassword ? <Icon name="eye-off" className="w-4 h-4" /> : <Icon name="eye" className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Rôle</label>
+                  <select
+                    value={formData.role}
+                    onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white"
+                  >
+                    <option value="MEMBRE">Membre d'équipe</option>
+                    <option value="ADMIN">Administrateur</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Compétences (séparées par des virgules)</label>
+                  <input
+                    type="text"
+                    value={formData.competences}
+                    onChange={(e) => setFormData({ ...formData, competences: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-800 mb-2">Affecter aux projets</label>
+                  <div className="space-y-2 max-h-36 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-lg">
+                    {projects.map((project) => (
+                      <label key={project.id} className="flex items-center gap-3 cursor-pointer text-xs text-slate-700">
+                        <input
+                          type="checkbox"
+                          checked={formData.projetsAffectes.includes(project.id)}
+                          onChange={() => handleProjectToggle(project.id)}
+                          className="rounded border-slate-300 text-blue-600"
+                        />
+                        <span>{project.nom}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
+              <div className="flex justify-end gap-3 p-4 border-t border-slate-100 shrink-0 bg-white">
                 <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50">
                   Annuler
                 </button>

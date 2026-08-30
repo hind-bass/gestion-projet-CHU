@@ -31,7 +31,8 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/v3/api-docs/**",
             "/actuator/health",
-            "/actuator/health/**"
+            "/actuator/health/**",
+            "/internal/ai/context"
     };
 
     public static List<RequestMatcher> publicMatchers() {

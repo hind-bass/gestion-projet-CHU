@@ -33,4 +33,28 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+
+
+# --- SCHÉMAS INTERNES (Spring Boot → FastAPI) ---
+
+class InternalProcessRequest(BaseModel):
+    meeting_id: Optional[int] = None
+    titre: Optional[str] = None
+    transcription: str
+
+
+class InternalActionItem(BaseModel):
+    texte: str
+    intervenant: Optional[str] = None
+    date: Optional[str] = None
+
+
+class InternalDecisionItem(BaseModel):
+    texte: str
+
+
+class InternalProcessResponse(BaseModel):
+    resume: str
+    actions: List[InternalActionItem]
+    decisions: List[InternalDecisionItem]
  

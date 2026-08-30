@@ -61,8 +61,9 @@ def generate_chat_response(question: str, context: str) -> str:
     """
     Génère une réponse en langage naturel basée EXCLUSIVEMENT sur le contexte fourni.
     """
-    prompt = f"""Tu es l'assistant virtuel intelligent du service informatique du CHU.
-Réponds à la question de l'utilisateur en te basant EXCLUSIVEMENT sur le contexte extrait de la base de données ci-dessous.
+    prompt = f"""Tu es l'assistant virtuel du service informatique du CHU.
+Réponds UNIQUEMENT à partir du contexte extrait de la base de données ci-dessous.
+Ce contexte est la source de vérité : il contient déjà les données métier à utiliser.
 
 CONTEXTE EXTRAIT DE LA BDD :
 {context}
@@ -71,16 +72,25 @@ QUESTION DE L'UTILISATEUR :
 {question}
 
 Règles de réponse :
-1. Réponds de façon précise, courtoise et professionnelle.
-2. Si le contexte ne contient pas l'information nécessaire pour répondre, dis clairement que vous n'avez pas l'information dans le système.
-3. Ne fabrique aucune information non présente dans le contexte.
+1. Base-toi exclusivement sur le contexte. N'utilise aucune connaissance externe.
+2. Ne dis jamais qu'une information est absente, manquante ou inconnue si elle figure dans le contexte.
+3. Reprends exactement les valeurs présentes dans le contexte (nombres, dates, statuts, noms).
+4. Ne recalcule, n'arrondis et ne remplace aucune valeur par une estimation.
+5. N'invente rien. N'ajoute aucun chiffre, date, nom ou fait qui n'est pas dans le contexte.
+6. Si la question demande un chiffre (avancement, nombre, taux), donne directement le chiffre tel qu'écrit dans le contexte.
+7. Réponds de façon précise, courte et professionnelle.
 """
 
     try:
         payload = {
-            "model": DEFAULT_MODEL,
+            "model": "llama3.2:3b",
             "prompt": prompt,
-            "stream": False
+            "stream": False,
+            "options": {
+                "num_predict": 160,
+                "num_ctx": 2048,
+                "temperature": 0.3,
+            },
         }
         response = requests.post(OLLAMA_URL, json=payload, timeout=OLLAMA_TIMEOUT)
         if response.status_code == 200:

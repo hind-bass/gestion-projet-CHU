@@ -4,11 +4,11 @@ import { extractErrorMessage } from '../../lib/api';
 import {
   formatDate,
   TASK_STATUS_BADGES,
-  TASK_STATUS_ICONS,
   TASK_STATUS_LABELS,
   TASK_STATUSES,
 } from '../../lib/labels';
 import { priorityBadgeClass, priorityLabel } from '../../lib/priority';
+import Icon from '../icons/Icon';
 
 // Colonnes du Kanban alignées sur les statuts du backend
 const columns = [
@@ -101,7 +101,9 @@ export default function UserTasks() {
         <div className="flex items-center gap-3">
           {/* Recherche */}
           <div className="relative">
-            <span className="absolute left-3 top-2 text-xs text-slate-400">🔍</span>
+            <span className="absolute left-3 top-2 text-slate-400">
+              <Icon name="search" className="w-3.5 h-3.5" />
+            </span>
             <input 
               type="text" 
               placeholder="Filtrer par nom..."
@@ -179,14 +181,14 @@ export default function UserTasks() {
 
                       {/* Projet */}
                       <div className="text-[10px] text-slate-500 font-medium mb-3 flex items-center gap-1">
-                        <span>📁</span>
+                        <Icon name="folder" className="w-3 h-3" />
                         <span className="truncate">{task.projectNom}</span>
                       </div>
 
                       {/* Footer de Carte : Échéance + Changement rapide d'état */}
                       <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
                         <span className="text-slate-400 flex items-center gap-1">
-                          📅 {formatDate(task.echeance)}
+                          <Icon name="calendar-days" className="w-3 h-3" /> {formatDate(task.echeance)}
                         </span>
 
                         {/* Selecteur d'état rapide */}
@@ -231,9 +233,9 @@ export default function UserTasks() {
               </div>
               <button 
                 onClick={() => setSelectedTask(null)}
-                className="text-slate-400 hover:text-white text-lg"
+                className="text-slate-400 hover:text-white"
               >
-                ✕
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
 
@@ -257,7 +259,7 @@ export default function UserTasks() {
                   >
                     {TASK_STATUSES.map((statut) => (
                       <option key={statut} value={statut}>
-                        {TASK_STATUS_ICONS[statut]} {TASK_STATUS_LABELS[statut]}
+                        {TASK_STATUS_LABELS[statut]}
                       </option>
                     ))}
                   </select>

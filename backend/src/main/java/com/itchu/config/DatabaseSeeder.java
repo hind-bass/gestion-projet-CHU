@@ -97,31 +97,35 @@ public class DatabaseSeeder implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        if (!seedEnabled || userRepository.count() > 0) {
+        if (!seedEnabled) {
             return;
         }
 
-        log.info("Initialisation des donnees de demonstration IT-CHU Manager...");
+        if (userRepository.count() == 0) {
+            log.info("Initialisation des donnees de demonstration IT-CHU Manager...");
 
-        List<User> admins = seedAdmins();
-        List<User> members = seedMembers();
-        User admin = admins.getFirst();
+            List<User> admins = seedAdmins();
+            List<User> members = seedMembers();
+            User admin = admins.getFirst();
 
-        List<Project> projects = seedProjects(admin, members);
-        seedProjectMembers(projects, admins, members);
-        List<Task> tasks = seedTasks(projects, members);
-        seedTaskHistory(tasks, admin);
-        seedMeetings(projects, members, tasks);
-        seedNotifications(members);
-        seedAuditLogs(admin, projects.getFirst());
-        seedWorkloadSnapshots(members);
+            List<Project> projects = seedProjects(admin, members);
+            seedProjectMembers(projects, admins, members);
+            List<Task> tasks = seedTasks(projects, members);
+            seedTaskHistory(tasks, admin);
+            seedMeetings(projects, members, tasks);
+            seedNotifications(members);
+            seedAuditLogs(admin, projects.getFirst());
+            seedWorkloadSnapshots(members);
 
-        log.info(
-                "Seed termine : {} users, {} projects, {} tasks, {} meetings",
-                userRepository.count(),
-                projectRepository.count(),
-                taskRepository.count(),
-                meetingRepository.count());
+            log.info(
+                    "Seed termine : {} users, {} projects, {} tasks, {} meetings",
+                    userRepository.count(),
+                    projectRepository.count(),
+                    taskRepository.count(),
+                    meetingRepository.count());
+        }
+
+        seedAdditiveTestDataset();
     }
 
     private List<User> seedAdmins() {
@@ -489,6 +493,320 @@ public class DatabaseSeeder implements ApplicationRunner {
             snapshot.setDate(today.minusDays(1));
             snapshot.setTauxCharge(55.0 + (i * 8.5));
             workloadSnapshotRepository.save(snapshot);
+        }
+    }
+
+    /**
+     * Jeu de test additif (DSI fictif). Idempotent : ne recree pas les emails / noms deja presents.
+     * Ne supprime aucune donnee existante.
+     */
+    private void seedAdditiveTestDataset() {
+        log.info("Verification du jeu de test additif IT-CHU...");
+
+        User amine = findOrCreateUser(
+                "El Idrissi", "Amine", "amine.elidrissi@chu.local", Role.ADMIN,
+                List.of("Pilotage", "Agile"));
+        User youssef = findOrCreateUser(
+                "Alami", "Youssef", "youssef.alami@chu.local", Role.MEMBRE,
+                List.of("Reseau", "Pare-feu"));
+        User sanaa = findOrCreateUser(
+                "Chraibi", "Sanaa", "sanaa.chraibi@chu.local", Role.MEMBRE,
+                List.of("Java", "API", "Tests"));
+        User salma = findOrCreateUser(
+                "Bennani", "Salma", "salma.bennani@chu.local", Role.MEMBRE,
+                List.of("DevOps", "Linux"));
+        User mehdi = findOrCreateUser(
+                "Alaoui", "Mehdi", "mehdi.alaoui@chu.local", Role.MEMBRE,
+                List.of("MySQL", "Securite"));
+
+        LocalDate today = LocalDate.now();
+
+        Project refonte = findOrCreateProject(
+                "Refonte SI Hospitalier",
+                "Modernisation du SI interne DSI : API, tests et déploiement (jeu de test fictif).",
+                ProjectStatus.ACTIF,
+                ProjectPriority.HAUTE,
+                today.minusMonths(3),
+                today.plusMonths(2),
+                0.40,
+                45.0,
+                amine);
+        Project securisation = findOrCreateProject(
+                "Sécurisation DSI & Logs",
+                "Durcissement des accès administrateurs et centralisation des journaux DSI (jeu de test fictif).",
+                ProjectStatus.ACTIF,
+                ProjectPriority.CRITIQUE,
+                today.minusMonths(1),
+                today.plusMonths(1),
+                0.55,
+                28.0,
+                amine);
+        Project reseau = findOrCreateProject(
+                "Modernisation Infrastructure Réseau",
+                "Renouvellement du cœur de réseau DSI et documentation d'exploitation (jeu de test fictif).",
+                ProjectStatus.TERMINE,
+                ProjectPriority.MOYENNE,
+                today.minusMonths(8),
+                today.minusMonths(1),
+                0.15,
+                100.0,
+                amine);
+        Project migration = findOrCreateProject(
+                "Migration des Applications Internes",
+                "Conteneurisation des applications internes DSI (jeu de test fictif, projet en retard).",
+                ProjectStatus.ACTIF,
+                ProjectPriority.HAUTE,
+                today.minusMonths(4),
+                today.minusDays(10),
+                0.48,
+                55.0,
+                amine);
+
+        ensureMember(refonte, amine);
+        ensureMember(refonte, sanaa);
+        ensureMember(refonte, salma);
+        ensureMember(refonte, mehdi);
+
+        ensureMember(securisation, amine);
+        ensureMember(securisation, youssef);
+        ensureMember(securisation, mehdi);
+
+        ensureMember(reseau, youssef);
+        ensureMember(reseau, salma);
+
+        ensureMember(migration, amine);
+        ensureMember(migration, sanaa);
+        ensureMember(migration, salma);
+
+        Task analyseExistant = findOrCreateTask(
+                refonte, "Analyse de l'existant SI", "Cartographie applicative DSI.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(40), sanaa, 12.0, List.of("Java"));
+        Task apiDossier = findOrCreateTask(
+                refonte, "Developpement API dossier", "API interne de suivi des tickets DSI.",
+                TaskStatus.EN_COURS, 3.0, today.plusDays(5), sanaa, 16.0, List.of("Java", "API"));
+        Task revueApi = findOrCreateTask(
+                refonte, "Revue technique API", "Revue de code avant recette.",
+                TaskStatus.EN_REVUE, 2.0, today.plusDays(3), mehdi, 6.0, List.of("Java"));
+        Task testsCharge = findOrCreateTask(
+                refonte, "Tests de charge API", "Scenarios de charge avant deploiement.",
+                TaskStatus.A_FAIRE, 3.0, today.plusDays(14), sanaa, 10.0, List.of("Tests"));
+        findOrCreateTask(
+                refonte, "Deploiement preproduction", "Mise en place de l'environnement de preprod DSI.",
+                TaskStatus.A_FAIRE, 3.0, today.plusDays(21), salma, 8.0, List.of("DevOps"));
+        findOrCreateTask(
+                refonte, "Redaction guide utilisateur", "Guide interne pour l'equipe DSI.",
+                TaskStatus.A_FAIRE, 1.0, today.plusDays(30), null, 6.0, List.of("Documentation"));
+
+        Task cartoLogs = findOrCreateTask(
+                securisation, "Cartographie des journaux", "Inventaire des sources de logs DSI.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(15), mehdi, 8.0, List.of("MySQL"));
+        Task durcissement = findOrCreateTask(
+                securisation, "Durcissement authentification admin", "Renforcement des acces administrateurs.",
+                TaskStatus.EN_COURS, 4.0, today.minusDays(2), mehdi, 12.0, List.of("Securite"));
+        findOrCreateTask(
+                securisation, "Centralisation logs SIEM", "Collecte centralisee des journaux DSI.",
+                TaskStatus.EN_COURS, 4.0, today.plusDays(3), youssef, 14.0, List.of("Securite"));
+        findOrCreateTask(
+                securisation, "Mise a niveau du pare-feu", "Mise a jour des regles du pare-feu DSI.",
+                TaskStatus.EN_COURS, 4.0, today.plusDays(8), youssef, 10.0, List.of("Pare-feu"));
+        findOrCreateTask(
+                securisation, "Revue des acces BDD", "Controle des comptes d'administration base de donnees.",
+                TaskStatus.A_FAIRE, 3.0, today.plusDays(7), null, 8.0, List.of("MySQL", "Securite"));
+        findOrCreateTask(
+                securisation, "Plan de reponse incident", "Procedure interne de reponse aux incidents DSI.",
+                TaskStatus.A_FAIRE, 2.0, today.plusDays(20), null, 6.0, List.of("Documentation"));
+
+        Task switchCoeur = findOrCreateTask(
+                reseau, "Remplacement switch coeur", "Remplacement du switch coeur du datacenter DSI.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(60), youssef, 20.0, List.of("Reseau"));
+        findOrCreateTask(
+                reseau, "Segmentation VLAN", "Decoupage VLAN des reseaux d'administration.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(40), youssef, 12.0, List.of("Reseau"));
+        findOrCreateTask(
+                reseau, "Tests de bascule reseau", "Tests de bascule et de reprise.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(25), salma, 8.0, List.of("Tests", "Reseau"));
+        findOrCreateTask(
+                reseau, "Documentation topologie", "Schemas d'exploitation reseau DSI.",
+                TaskStatus.TERMINEE, 1.0, today.minusDays(15), salma, 6.0, List.of("Documentation"));
+
+        Task inventaireApps = findOrCreateTask(
+                migration, "Inventaire applications internes", "Liste des applications DSI a migrer.",
+                TaskStatus.TERMINEE, 2.0, today.minusDays(60), sanaa, 10.0, List.of("Documentation"));
+        Task batchRh = findOrCreateTask(
+                migration, "Conteneurisation batch RH", "Emballage Docker du batch interne RH.",
+                TaskStatus.EN_COURS, 3.0, today.minusDays(5), salma, 16.0, List.of("DevOps", "Linux"));
+        Task recetteMetier = findOrCreateTask(
+                migration, "Tests recette metier", "Recette fonctionnelle des applications migrees.",
+                TaskStatus.EN_REVUE, 3.0, today.plusDays(2), sanaa, 8.0, List.of("Tests"));
+        findOrCreateTask(
+                migration, "Coupe-over production", "Bascule de production des applications internes.",
+                TaskStatus.A_FAIRE, 4.0, today.plusDays(10), salma, 12.0, List.of("DevOps"));
+        findOrCreateTask(
+                migration, "Documentation migration", "Runbook de bascule pour l'equipe DSI.",
+                TaskStatus.A_FAIRE, 1.0, today.plusDays(15), null, 4.0, List.of("Documentation"));
+
+        ensureHistory(analyseExistant, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.TERMINEE));
+        ensureHistory(apiDossier, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS));
+        ensureHistory(revueApi, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.EN_REVUE));
+        ensureHistory(cartoLogs, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.TERMINEE));
+        ensureHistory(durcissement, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS));
+        ensureHistory(switchCoeur, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.EN_REVUE, TaskStatus.TERMINEE));
+        ensureHistory(inventaireApps, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.TERMINEE));
+        ensureHistory(batchRh, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS));
+        ensureHistory(recetteMetier, amine, List.of(TaskStatus.A_FAIRE, TaskStatus.EN_COURS, TaskStatus.EN_REVUE));
+
+        Meeting pointRefonte = findOrCreateMeeting(
+                refonte,
+                "Point d'avancement Refonte SI",
+                LocalDateTime.now().minusDays(3).withHour(10).withMinute(0).withSecond(0).withNano(0),
+                Set.of(amine, sanaa, salma),
+                "Avancement API, planning des tests de charge, deploiement preproduction.",
+                """
+                Amine : Point d'avancement sur la refonte SI.
+                Sanaa : L'API interne avance, il reste les tests de charge.
+                Salma : La preproduction peut etre preparee apres les tests.
+                Amine : Il est decide de finaliser les tests de charge avant le deploiement.
+                Sanaa : Je prepare les scenarios de tests de charge.
+                """,
+                "Les tests de charge API doivent etre finalises avant le deploiement en preproduction.",
+                MeetingProcessingStatus.TERMINE);
+
+        Meeting revueSecurite = findOrCreateMeeting(
+                securisation,
+                "Revue de sécurité et des accès",
+                LocalDateTime.now().minusDays(1).withHour(14).withMinute(30).withSecond(0).withNano(0),
+                Set.of(amine, youssef, mehdi),
+                "Durcissement des comptes admin, centralisation des journaux, acces bases de donnees.",
+                """
+                Amine : Revue de securite DSI.
+                Mehdi : Le durcissement des comptes admin n'est pas termine.
+                Youssef : La centralisation SIEM est en cours.
+                Amine : Le durcissement de l'authentification admin est bloquant pour la suite.
+                Mehdi : Je clôture le durcissement cette semaine.
+                """,
+                "Le durcissement de l'authentification admin reste bloquant.",
+                MeetingProcessingStatus.TERMINE);
+
+        Meeting bilanReseau = findOrCreateMeeting(
+                reseau,
+                "Bilan réseau",
+                LocalDateTime.now().minusDays(20).withHour(9).withMinute(0).withSecond(0).withNano(0),
+                Set.of(youssef, salma),
+                "Cloture du renouvellement reseau et archivage de la documentation.",
+                """
+                Youssef : Le coeur de reseau a ete remplace.
+                Salma : La documentation de topologie est a jour.
+                Youssef : Le projet de modernisation reseau peut etre cloture.
+                """,
+                "La modernisation de l'infrastructure reseau est cloturee.",
+                MeetingProcessingStatus.TERMINE);
+
+        ensureDecision(pointRefonte, "Finaliser les tests de charge avant le deploiement.", false);
+        ensureDecision(revueSecurite, "Le durcissement de l'authentification admin est bloquant pour la suite.", false);
+        ensureDecision(bilanReseau, "La modernisation reseau est cloturee.", true);
+
+        ensureAction(pointRefonte, "Preparer les scenarios de tests de charge.", "Sanaa", today.plusDays(10), testsCharge);
+        ensureAction(revueSecurite, "Cloturer le durcissement authentification admin.", "Mehdi", today.plusDays(3), durcissement);
+        ensureAction(bilanReseau, "Archiver les schemas reseau.", "Salma", today.plusDays(5), null);
+
+        log.info("Jeu de test additif verifie (idempotent).");
+    }
+
+    private User findOrCreateUser(String nom, String prenom, String email, Role role, List<String> competences) {
+        return userRepository.findByEmail(email).orElseGet(() -> {
+            User created = createUser(nom, prenom, email, role, competences);
+            return userRepository.save(created);
+        });
+    }
+
+    private Project findOrCreateProject(
+            String nom,
+            String description,
+            ProjectStatus statut,
+            ProjectPriority priorite,
+            LocalDate debut,
+            LocalDate fin,
+            double risque,
+            double avancement,
+            User createur) {
+        return projectRepository.findAll().stream()
+                .filter(project -> nom.equals(project.getNom()))
+                .findFirst()
+                .orElseGet(() -> projectRepository.save(buildProject(
+                        nom, description, statut, priorite, debut, fin, risque, avancement, createur)));
+    }
+
+    private void ensureMember(Project project, User user) {
+        if (!projectMemberRepository.existsByProjectIdAndUserId(project.getId(), user.getId())) {
+            projectMemberRepository.save(new ProjectMember(project, user));
+        }
+    }
+
+    private Task findOrCreateTask(
+            Project project,
+            String titre,
+            String description,
+            TaskStatus statut,
+            double priorite,
+            LocalDate echeance,
+            User responsable,
+            double heures,
+            List<String> tags) {
+        return taskRepository.findByProjectId(project.getId()).stream()
+                .filter(task -> titre.equals(task.getTitre()))
+                .findFirst()
+                .orElseGet(() -> taskRepository.save(buildTask(
+                        project, titre, description, statut, priorite, echeance, responsable, heures, tags)));
+    }
+
+    private void ensureHistory(Task task, User auteur, List<TaskStatus> chronologie) {
+        if (taskHistoryRepository.findByTaskIdOrderByDateChangementDesc(task.getId()).isEmpty()
+                && chronologie.size() >= 2) {
+            for (int i = 0; i < chronologie.size() - 1; i++) {
+                TaskHistory history = new TaskHistory();
+                history.setTask(task);
+                history.setAncienStatut(chronologie.get(i));
+                history.setNouveauStatut(chronologie.get(i + 1));
+                history.setAuteur(auteur);
+                history.setDateChangement(LocalDateTime.now().minusDays(chronologie.size() - i));
+                taskHistoryRepository.save(history);
+            }
+        }
+    }
+
+    private Meeting findOrCreateMeeting(
+            Project project,
+            String titre,
+            LocalDateTime date,
+            Set<User> participants,
+            String ordreDuJour,
+            String transcription,
+            String resume,
+            MeetingProcessingStatus statut) {
+        return meetingRepository.findByProjectId(project.getId()).stream()
+                .filter(meeting -> titre.equals(meeting.getTitre()))
+                .findFirst()
+                .orElseGet(() -> {
+                    Meeting meeting = buildMeeting(project, titre, date, participants, ordreDuJour, transcription, statut);
+                    meeting.setResumeGenere(resume);
+                    meeting.setNotesManuelles("Compte rendu interne DSI (jeu de test fictif).");
+                    return meetingRepository.save(meeting);
+                });
+    }
+
+    private void ensureDecision(Meeting meeting, String texte, boolean traite) {
+        boolean exists = meetingDecisionRepository.findByMeetingId(meeting.getId()).stream()
+                .anyMatch(decision -> texte.equals(decision.getTexteDecision()));
+        if (!exists) {
+            meetingDecisionRepository.save(decision(meeting, texte, traite));
+        }
+    }
+
+    private void ensureAction(Meeting meeting, String texte, String intervenant, LocalDate date, Task task) {
+        boolean exists = meetingActionRepository.findByMeetingId(meeting.getId()).stream()
+                .anyMatch(action -> texte.equals(action.getTexteAction()));
+        if (!exists) {
+            meetingActionRepository.save(action(meeting, texte, intervenant, date, task));
         }
     }
 }

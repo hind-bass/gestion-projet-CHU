@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { listMyMeetings } from '../../api/meetings';
 import { extractErrorMessage } from '../../lib/api';
 import { formatDate, formatDateTime, formatTime, fullName } from '../../lib/labels';
+import Icon from '../icons/Icon';
 
 const PROCESSING_LABELS = {
-  EN_ATTENTE: '⏳ Compte rendu en attente',
-  EN_COURS: '⚙️ Traitement IA en cours',
-  TERMINE: '✅ Compte rendu disponible',
-  ERREUR: '⚠️ Erreur de traitement',
+  EN_ATTENTE: { icon: 'hourglass', label: 'Compte rendu en attente' },
+  EN_COURS: { icon: 'settings', label: 'Traitement IA en cours' },
+  TERMINE: { icon: 'circle-check', label: 'Compte rendu disponible' },
+  ERREUR: { icon: 'triangle-alert', label: 'Erreur de traitement' },
 };
 
 function agendaLines(ordreDuJour) {
@@ -80,7 +81,9 @@ export default function UserMeetings() {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📅 À venir ({upcoming.length})
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="calendar-days" className="w-3.5 h-3.5" /> À venir ({upcoming.length})
+            </span>
           </button>
           <button
             onClick={() => setActiveTab('COMPLETED')}
@@ -90,7 +93,9 @@ export default function UserMeetings() {
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            📝 Comptes rendus ({past.length})
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="file-text" className="w-3.5 h-3.5" /> Comptes rendus ({past.length})
+            </span>
           </button>
         </div>
       </div>
@@ -118,11 +123,11 @@ export default function UserMeetings() {
               <div>
                 {/* Entête Carte */}
                 <div className="flex items-start justify-between gap-2 mb-3">
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100">
-                    📁 {meeting.projectNom}
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-700 border border-teal-100 inline-flex items-center gap-1">
+                    <Icon name="folder" className="w-3 h-3" /> {meeting.projectNom}
                   </span>
                   <span className="text-xs font-semibold text-slate-500 flex items-center gap-1">
-                    🕒 {formatTime(meeting.date)}
+                    <Icon name="clock" className="w-3.5 h-3.5" /> {formatTime(meeting.date)}
                   </span>
                 </div>
 
@@ -132,17 +137,30 @@ export default function UserMeetings() {
                 {/* Infos Réunion */}
                 <div className="space-y-1.5 text-xs text-slate-600 mb-4">
                   <p className="flex items-center gap-2">
-                    <span className="text-slate-400">📅 Date :</span>
+                    <span className="text-slate-400 inline-flex items-center gap-1">
+                      <Icon name="calendar-days" className="w-3.5 h-3.5" /> Date :
+                    </span>
                     <span className="font-semibold text-slate-700">{formatDate(meeting.date)}</span>
                   </p>
                   <p className="flex items-center gap-2">
-                    <span className="text-slate-400">📄 Traitement :</span>
-                    <span className="font-medium text-slate-700">
-                      {PROCESSING_LABELS[meeting.statutTraitement] || meeting.statutTraitement}
+                    <span className="text-slate-400 inline-flex items-center gap-1">
+                      <Icon name="file-text" className="w-3.5 h-3.5" /> Traitement :
+                    </span>
+                    <span className="font-medium text-slate-700 inline-flex items-center gap-1">
+                      {PROCESSING_LABELS[meeting.statutTraitement] ? (
+                        <>
+                          <Icon name={PROCESSING_LABELS[meeting.statutTraitement].icon} className="w-3.5 h-3.5" />
+                          {PROCESSING_LABELS[meeting.statutTraitement].label}
+                        </>
+                      ) : (
+                        meeting.statutTraitement
+                      )}
                     </span>
                   </p>
                   <p className="flex items-start gap-2">
-                    <span className="text-slate-400 shrink-0">👥 Participants :</span>
+                    <span className="text-slate-400 shrink-0 inline-flex items-center gap-1">
+                      <Icon name="users" className="w-3.5 h-3.5" /> Participants :
+                    </span>
                     <span className="font-medium text-slate-700">
                       {(meeting.participants || []).map(fullName).join(', ') || '—'}
                     </span>
@@ -166,8 +184,8 @@ export default function UserMeetings() {
               <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 {isUpcoming ? (
                   <>
-                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-                      🟢 Planifiée
+                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" /> Planifiée
                     </span>
                     <span className="text-[11px] text-slate-400 font-medium">
                       {formatDateTime(meeting.date)}
@@ -178,7 +196,9 @@ export default function UserMeetings() {
                     onClick={() => setSelectedReport(meeting)}
                     className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-2"
                   >
-                    <span>📄 Voir le compte rendu</span>
+                    <span className="inline-flex items-center gap-2">
+                      <Icon name="file-text" className="w-3.5 h-3.5" /> Voir le compte rendu
+                    </span>
                   </button>
                 )}
               </div>
@@ -206,9 +226,9 @@ export default function UserMeetings() {
               </div>
               <button 
                 onClick={() => setSelectedReport(null)}
-                className="text-slate-400 hover:text-white text-lg"
+                className="text-slate-400 hover:text-white"
               >
-                ✕
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
 
@@ -228,7 +248,11 @@ export default function UserMeetings() {
                 <ul className="space-y-1.5">
                   {(selectedReport.decisions || []).map((dec) => (
                     <li key={dec.id} className="flex items-start gap-2 bg-emerald-50/50 p-2 rounded border border-emerald-100 text-emerald-900">
-                      <span>{dec.statutTraite ? '✅' : '🕓'}</span>
+                      <span>
+                        {dec.statutTraite
+                          ? <Icon name="circle-check" className="w-3.5 h-3.5 mt-0.5" />
+                          : <Icon name="clock" className="w-3.5 h-3.5 mt-0.5" />}
+                      </span>
                       <span>{dec.texteDecision}</span>
                     </li>
                   ))}

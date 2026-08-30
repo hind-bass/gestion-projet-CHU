@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { iaChat } from '../../lib/ia';
+import Icon from '../icons/Icon';
 
 export default function UserChatbot({ user }) {
   const [messages, setMessages] = useState([
@@ -68,7 +69,7 @@ export default function UserChatbot({ user }) {
       const errorMsg = {
         id: Date.now() + 1,
         sender: 'bot',
-        text: "⚠️ Désolé, je n'ai pas pu contacter le service IA. Vérifiez que votre serveur FastAPI est opérationnel.",
+        text: "Désolé, je n'ai pas pu contacter le service IA. Vérifiez que votre serveur FastAPI est opérationnel.",
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -83,8 +84,8 @@ export default function UserChatbot({ user }) {
       {/* En-tête Assistant */}
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-lg shadow-sm">
-            🤖
+          <div className="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-sm">
+            <Icon name="bot" className="w-5 h-5" />
           </div>
           <div>
             <h1 className="text-sm font-bold text-slate-800">Assistant IA Projets</h1>
@@ -124,7 +125,7 @@ export default function UserChatbot({ user }) {
                 {/* Indicateur optionnel du nombre de sources RAG consultées */}
                 {msg.sender === 'bot' && msg.sourcesCount !== undefined && (
                   <div className="mt-2 text-[10px] text-teal-700 bg-teal-50 border border-teal-100 px-2 py-0.5 rounded-md w-fit font-sans flex items-center gap-1">
-                    <span>📚</span>
+                    <Icon name="book-open" className="w-3 h-3" />
                     <span>{msg.sourcesCount} source(s) BDD consultée(s)</span>
                   </div>
                 )}
@@ -144,9 +145,9 @@ export default function UserChatbot({ user }) {
           {isTyping && (
             <div className="flex justify-start">
               <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3.5 text-xs text-slate-400 flex items-center gap-2">
-                <span className="animate-bounce">●</span>
-                <span className="animate-bounce [animation-delay:0.2s]">●</span>
-                <span className="animate-bounce [animation-delay:0.4s]">●</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce" />
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.2s]" />
+                <span className="w-1.5 h-1.5 rounded-full bg-slate-400 animate-bounce [animation-delay:0.4s]" />
                 <span className="text-[11px] font-medium text-slate-500 ml-1">L'assistant interroge FastAPI / LLM...</span>
               </div>
             </div>
@@ -164,7 +165,9 @@ export default function UserChatbot({ user }) {
               disabled={isTyping}
               className="text-[11px] font-medium text-slate-600 bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-200 border border-slate-200 rounded-full px-3 py-1 shrink-0 transition-colors disabled:opacity-50 cursor-pointer"
             >
-              💡 {prompt}
+              <span className="inline-flex items-center gap-1">
+                <Icon name="lightbulb" className="w-3 h-3" /> {prompt}
+              </span>
             </button>
           ))}
         </div>
@@ -190,7 +193,7 @@ export default function UserChatbot({ user }) {
             className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold px-4 py-2.5 rounded-xl text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
           >
             <span>Envoyer</span>
-            <span>➔</span>
+            <Icon name="arrow-right" className="w-4 h-4" />
           </button>
         </form>
 

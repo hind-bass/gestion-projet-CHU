@@ -8,10 +8,10 @@ export const TASK_STATUS_LABELS = {
 };
 
 export const TASK_STATUS_ICONS = {
-  A_FAIRE: '⏳',
-  EN_COURS: '🚀',
-  EN_REVUE: '🔍',
-  TERMINEE: '✅',
+  A_FAIRE: 'hourglass',
+  EN_COURS: 'rocket',
+  EN_REVUE: 'search',
+  TERMINEE: 'circle-check',
 };
 
 export const TASK_STATUS_BADGES = {
@@ -49,12 +49,12 @@ export const PROJECT_PRIORITY_LABELS = {
 };
 
 export const NOTIFICATION_TYPE_DETAILS = {
-  RETARD: { icon: '🚨', tag: 'En retard', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', kind: 'danger' },
-  SURCHARGE: { icon: '⚠️', tag: 'Surcharge', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', kind: 'warning' },
-  DECISION_NON_TRAITEE: { icon: '📝', tag: 'Décision', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', kind: 'info' },
-  REUNION: { icon: '📅', tag: 'Réunion', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', kind: 'info' },
-  TACHE: { icon: '☑️', tag: 'Tâche', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', kind: 'info' },
-  SYSTEME: { icon: '🔔', tag: 'Système', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', kind: 'info' },
+  RETARD: { icon: 'octagon-alert', tag: 'En retard', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', kind: 'danger' },
+  SURCHARGE: { icon: 'triangle-alert', tag: 'Surcharge', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', kind: 'warning' },
+  DECISION_NON_TRAITEE: { icon: 'file-text', tag: 'Décision', bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700', kind: 'info' },
+  REUNION: { icon: 'calendar-days', tag: 'Réunion', bg: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700', kind: 'info' },
+  TACHE: { icon: 'square-check-big', tag: 'Tâche', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', kind: 'info' },
+  SYSTEME: { icon: 'bell', tag: 'Système', bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-700', kind: 'info' },
 };
 
 export function notificationTypeDetails(type) {

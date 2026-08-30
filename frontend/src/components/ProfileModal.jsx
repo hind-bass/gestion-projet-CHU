@@ -3,6 +3,7 @@ import { changeMyPassword, updateMyProfile } from '../api/users';
 import { useAuth } from '../context/AuthContext';
 import { extractErrorMessage } from '../lib/api';
 import { roleLabel } from '../lib/labels';
+import Icon from './icons/Icon';
 
 export default function ProfileModal({ user, onClose }) {
   const { applyUser } = useAuth();
@@ -108,10 +109,12 @@ export default function ProfileModal({ user, onClose }) {
         {/* Header Modal */}
         <div className="flex items-center justify-between p-4 border-b border-slate-100 shrink-0">
           <div className="flex items-center gap-2 text-slate-800 font-semibold">
-            <span>👤 Gestion du Profil {roleText}</span>
+            <span className="inline-flex items-center gap-2">
+              <Icon name="user" className="w-4 h-4" /> Gestion du Profil {roleText}
+            </span>
           </div>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
-            ✕
+            <Icon name="x" className="w-4 h-4" />
           </button>
         </div>
 
@@ -124,8 +127,8 @@ export default function ProfileModal({ user, onClose }) {
             </div>
           )}
           {successMessage && (
-            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg font-medium">
-              ✅ {successMessage}
+            <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-lg font-medium flex items-center gap-1.5">
+              <Icon name="circle-check" className="w-3.5 h-3.5" /> {successMessage}
             </div>
           )}
 
@@ -137,7 +140,7 @@ export default function ProfileModal({ user, onClose }) {
             <div>
               <p className="text-sm font-semibold text-slate-900">{formData.prenom} {formData.nom}</p>
               <div className="flex items-center gap-1.5 text-xs text-blue-600 font-medium mt-0.5">
-                <span>🛡️ {roleText} ({user?.role || 'MEMBRE'})</span>
+                <Icon name="shield" className="w-3.5 h-3.5" /> {roleText} ({user?.role || 'MEMBRE'})
               </div>
             </div>
           </div>
@@ -200,7 +203,7 @@ export default function ProfileModal({ user, onClose }) {
           {/* Section Changement de Mot de Passe */}
           <div className="pt-3 border-t border-slate-200">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-              <span>🔒</span> Changer le mot de passe
+              <Icon name="lock" className="w-3.5 h-3.5" /> Changer le mot de passe
             </h4>
 
             {passwordError && (
@@ -266,7 +269,15 @@ export default function ProfileModal({ user, onClose }) {
               disabled={saving}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm disabled:opacity-50"
             >
-              <span>{saving ? '⏳ Enregistrement…' : '💾 Enregistrer'}</span>
+              {saving ? (
+                <>
+                  <Icon name="hourglass" className="w-4 h-4" /> Enregistrement…
+                </>
+              ) : (
+                <>
+                  <Icon name="save" className="w-4 h-4" /> Enregistrer
+                </>
+              )}
             </button>
           </div>
         </form>

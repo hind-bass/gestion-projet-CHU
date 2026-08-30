@@ -8,6 +8,7 @@ import {
   PROJECT_STATUS_LABELS,
   projectStatusBadgeClass,
 } from '../lib/labels';
+import Icon from './icons/Icon';
 
 const EMPTY_FORM = {
   nom: '',
@@ -145,9 +146,9 @@ export default function ProjectManagement() {
         </div>
         <button
           onClick={handleOpenCreateModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-1.5"
         >
-          + Nouveau Projet
+          <Icon name="plus" className="w-4 h-4" /> Nouveau Projet
         </button>
       </div>
 
@@ -252,7 +253,9 @@ export default function ProjectManagement() {
               <h3 className="font-bold text-slate-800 text-base">
                 {editingProject ? 'Modifier le Projet' : 'Créer un Nouveau Projet'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <Icon name="x" className="w-4 h-4" />
+              </button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">

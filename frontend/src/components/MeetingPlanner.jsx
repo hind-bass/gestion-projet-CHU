@@ -4,6 +4,7 @@ import { listProjects } from '../api/projects';
 import { listUsers } from '../api/users';
 import { extractErrorMessage } from '../lib/api';
 import { formatDate, formatTime, fullName } from '../lib/labels';
+import Icon from './icons/Icon';
 
 const EMPTY_FORM = {
   titre: '',
@@ -186,7 +187,9 @@ export default function MeetingPlanner() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-base">Planifier une réunion</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400">
+                <Icon name="x" className="w-4 h-4" />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>

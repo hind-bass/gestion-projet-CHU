@@ -9,6 +9,7 @@ import {
   projectStatusBadgeClass,
   roleLabel,
 } from '../../lib/labels';
+import Icon from '../icons/Icon';
 
 export default function UserProjects() {
   const [assignedProjects, setAssignedProjects] = useState([]);
@@ -63,7 +64,9 @@ export default function UserProjects() {
 
         {/* Barre de recherche */}
         <div className="relative">
-          <span className="absolute left-3 top-2 text-xs text-slate-400">🔍</span>
+          <span className="absolute left-3 top-2 text-slate-400">
+            <Icon name="search" className="w-3.5 h-3.5" />
+          </span>
           <input
             type="text"
             placeholder="Rechercher un projet..."
@@ -147,7 +150,7 @@ export default function UserProjects() {
                   onClick={() => setSelectedProject(project)}
                   className="w-full bg-slate-800 hover:bg-slate-900 text-white font-semibold py-1.5 rounded-lg text-xs transition-colors flex items-center justify-center gap-1.5"
                 >
-                  <span>📂 Consulter le projet</span>
+                  <Icon name="folder-open" className="w-3.5 h-3.5" /> Consulter le projet
                 </button>
               </div>
             </div>
@@ -174,9 +177,9 @@ export default function UserProjects() {
               </div>
               <button 
                 onClick={() => setSelectedProject(null)}
-                className="text-slate-400 hover:text-white text-lg"
+                className="text-slate-400 hover:text-white"
               >
-                ✕
+                <Icon name="x" className="w-4 h-4" />
               </button>
             </div>
 

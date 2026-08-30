@@ -5,6 +5,7 @@ import { listUsers } from '../api/users';
 import { extractErrorMessage } from '../lib/api';
 import { formatDate, fullName, TASK_STATUS_BADGES, TASK_STATUS_LABELS, TASK_STATUSES } from '../lib/labels';
 import { PRIORITY_VALUES, priorityBadgeClass, priorityLabel } from '../lib/priority';
+import Icon from './icons/Icon';
 
 const EMPTY_FORM = {
   titre: '',
@@ -153,8 +154,8 @@ export default function TaskManagement() {
             Créer, assigner manuellement ou utiliser l'attribution intelligente.
           </p>
         </div>
-        <button onClick={handleOpenCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-          + Nouvelle Tâche
+        <button onClick={handleOpenCreateModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium inline-flex items-center gap-1.5">
+          <Icon name="plus" className="w-4 h-4" /> Nouvelle Tâche
         </button>
       </div>
 
@@ -233,7 +234,9 @@ export default function TaskManagement() {
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg border border-slate-200 overflow-hidden">
             <div className="flex justify-between items-center p-4 border-b border-slate-100">
               <h3 className="font-bold text-slate-800 text-base">{editingTask ? 'Modifier la tâche' : 'Créer une tâche'}</h3>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400">✕</button>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400">
+                <Icon name="x" className="w-4 h-4" />
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>

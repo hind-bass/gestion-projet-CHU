@@ -10,6 +10,7 @@ import {
   notificationTypeDetails,
   relativeTime,
 } from '../../lib/labels';
+import Icon from '../icons/Icon';
 
 export default function UserNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -75,7 +76,7 @@ export default function UserNotifications() {
       <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="relative">
-            <span className="text-2xl">🔔</span>
+            <Icon name="bell" className="w-7 h-7 text-slate-700" />
             {unreadCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white font-bold text-[10px] w-4 h-4 rounded-full flex items-center justify-center animate-pulse">
                 {unreadCount}
@@ -94,16 +95,16 @@ export default function UserNotifications() {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={load}
-            className="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs font-semibold text-slate-600 hover:text-slate-800 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
           >
-            ⟳ Rafraîchir
+            <Icon name="refresh-cw" className="w-3.5 h-3.5" /> Rafraîchir
           </button>
           {unreadCount > 0 && (
             <button
               onClick={markAllAsRead}
-              className="text-xs font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg transition-colors"
+              className="text-xs font-semibold text-teal-700 hover:text-teal-800 bg-teal-50 border border-teal-200 px-3 py-1.5 rounded-lg transition-colors inline-flex items-center gap-1.5"
             >
-              ✓ Tout marquer comme lu
+              <Icon name="check" className="w-3.5 h-3.5" /> Tout marquer comme lu
             </button>
           )}
         </div>
@@ -139,7 +140,9 @@ export default function UserNotifications() {
             filter === 'HIGH' ? 'bg-red-600 text-white' : 'text-slate-600 hover:bg-slate-100'
           }`}
         >
-          Prioritaires 🔥 ({notifications.filter(isHigh).length})
+          <span className="inline-flex items-center gap-1">
+            Prioritaires <Icon name="flame" className="w-3.5 h-3.5" /> ({notifications.filter(isHigh).length})
+          </span>
         </button>
       </div>
 
@@ -163,7 +166,9 @@ export default function UserNotifications() {
             >
               <div className="flex items-start gap-3.5">
                 {/* Icône du type */}
-                <div className="text-xl shrink-0 mt-0.5">{typeInfo.icon}</div>
+                <div className="shrink-0 mt-0.5">
+                  <Icon name={typeInfo.icon} className="w-5 h-5" />
+                </div>
 
                 <div className="space-y-1">
                   {/* Tag & Horodatage */}
@@ -172,8 +177,8 @@ export default function UserNotifications() {
                       {typeInfo.tag}
                     </span>
                     {notif.lienReference && (
-                      <span className="text-[10px] font-semibold text-slate-400">
-                        🔗 {notif.lienReference}
+                      <span className="text-[10px] font-semibold text-slate-400 inline-flex items-center gap-1">
+                        <Icon name="link" className="w-3 h-3" /> {notif.lienReference}
                       </span>
                     )}
                     <span className="text-[10px] text-slate-400 font-mono">
@@ -196,7 +201,7 @@ export default function UserNotifications() {
                     title="Marquer comme lu"
                     className="p-1.5 hover:bg-white/80 rounded-lg text-slate-400 hover:text-teal-700 text-xs transition-colors"
                   >
-                    ✓
+                    <Icon name="check" className="w-4 h-4" />
                   </button>
                 )}
               </div>

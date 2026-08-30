@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { extractErrorMessage } from '../lib/api';
+import Icon from './icons/Icon';
 
 export default function LoginPage({ onLoggedIn }) {
   const { login } = useAuth();
@@ -74,7 +75,9 @@ export default function LoginPage({ onLoggedIn }) {
               Adresse Email
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 text-xs">✉️</span>
+              <span className="absolute left-3 top-2.5 text-slate-400">
+                <Icon name="mail" className="w-4 h-4" />
+              </span>
               <input
                 type="email"
                 name="email"
@@ -93,7 +96,9 @@ export default function LoginPage({ onLoggedIn }) {
               Mot de passe
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔒</span>
+              <span className="absolute left-3 top-2.5 text-slate-400">
+                <Icon name="lock" className="w-4 h-4" />
+              </span>
               <input
                 type={showPassword ? 'text' : 'password'}
                 name="motDePasse"
@@ -109,7 +114,7 @@ export default function LoginPage({ onLoggedIn }) {
                 className="absolute right-3 top-2.5 text-slate-400 hover:text-teal-700 text-xs focus:outline-none transition-colors"
                 title={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
               >
-                {showPassword ? '👁️' : '🙈'}
+                {showPassword ? <Icon name="eye" className="w-4 h-4" /> : <Icon name="eye-off" className="w-4 h-4" />}
               </button>
             </div>
           </div>
@@ -120,7 +125,12 @@ export default function LoginPage({ onLoggedIn }) {
             disabled={loading}
             className="w-full mt-2 bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-700 hover:to-sky-700 active:scale-[0.99] text-white py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow-lg shadow-teal-600/25 disabled:opacity-50 cursor-pointer"
           >
-            {loading ? 'Connexion en cours...' : 'Se connecter ➔'}
+            {loading ? 'Connexion en cours...' : (
+              <>
+                Se connecter
+                <Icon name="arrow-right" className="w-4 h-4" />
+              </>
+            )}
           </button>
         </form>
 

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { alertAdmin } from '../../api/notifications';
 import { getMyWorkload } from '../../api/workload';
 import { extractErrorMessage } from '../../lib/api';
+import Icon from '../icons/Icon';
 
 const PROJECT_COLORS = ['bg-teal-500', 'bg-sky-500', 'bg-indigo-500', 'bg-amber-500', 'bg-emerald-500', 'bg-rose-500'];
 
@@ -109,7 +110,7 @@ export default function UserWorkload() {
       {!loading && plannedPercentage >= 85 && (
         <div className={`p-4 rounded-xl border ${status.border} ${status.alertBg} flex items-center justify-between gap-3 text-xs`}>
           <div className="flex items-center gap-3">
-            <span className="text-lg">⚠️</span>
+            <Icon name="triangle-alert" className="w-5 h-5" />
             <div>
               <p className="font-bold">Alerte de capacité : {status.label}</p>
               <p className="opacity-90">
@@ -124,7 +125,11 @@ export default function UserWorkload() {
             className={`font-semibold text-[11px] shrink-0 px-3 py-1.5 rounded-lg bg-white/70 border ${status.border} hover:bg-white transition-colors cursor-pointer disabled:opacity-60`}
           >
             {alertState.sent
-              ? '✅ Administrateur averti'
+              ? (
+                <span className="inline-flex items-center gap-1">
+                  <Icon name="circle-check" className="w-3.5 h-3.5" /> Administrateur averti
+                </span>
+              )
               : alertState.sending
                 ? 'Envoi…'
                 : "Aviser l'administrateur"}
@@ -275,7 +280,7 @@ export default function UserWorkload() {
           </div>
 
           <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 text-[11px] text-slate-500 flex items-center gap-2">
-            <span>💡</span>
+            <Icon name="lightbulb" className="w-4 h-4" />
             <span>Capacité de référence : {maxCapacityHours}h par semaine.</span>
           </div>
         </div>

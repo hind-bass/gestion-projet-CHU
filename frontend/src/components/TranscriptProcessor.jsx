@@ -1,31 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { listProjects } from '../api/projects';
 import { iaProcessTranscript } from '../lib/ia';
-
-// Icônes SVG
-const CpuIcon = () => (
-  <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-  </svg>
-);
-
-const RocketIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-  </svg>
-);
-
-const CheckCircleIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
+import Icon from './icons/Icon';
 
 export default function TranscriptProcessor({
   projects: projectsProp,
@@ -117,7 +93,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
       <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <CpuIcon /> Traitement IA des Transcriptions
+            <Icon name="cpu" className="w-4 h-4 text-indigo-600" /> Traitement IA des Transcriptions
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
             Analysez les comptes-rendus ou verbatims de réunion pour extraire automatiquement résumés, décisions et tâches structurées.
@@ -143,7 +119,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
                     className="text-xs text-slate-400 hover:text-red-600 flex items-center gap-1 transition-colors cursor-pointer"
                     title="Effacer le texte"
                   >
-                    <TrashIcon /> Effacer
+                    <Icon name="trash-2" className="w-3.5 h-3.5" /> Effacer
                   </button>
                 )}
                 <button
@@ -203,7 +179,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
               </>
             ) : (
               <>
-                <RocketIcon />
+                <Icon name="rocket" className="w-4 h-4" />
                 <span>Lancer l'Analyse IA</span>
               </>
             )}
@@ -217,14 +193,14 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
           </h2>
 
           {errorMessage && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs">
-              ⚠️ Impossible de joindre le service d'analyse FastAPI.
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-xs inline-flex items-center gap-1.5 w-full">
+              <Icon name="triangle-alert" className="w-3.5 h-3.5 shrink-0" /> Impossible de joindre le service d'analyse FastAPI.
             </div>
           )}
 
           {!analysisResult && !isProcessing && !errorMessage && (
             <div className="h-80 flex flex-col items-center justify-center text-slate-400 text-xs text-center p-6 border-2 border-dashed border-slate-200 rounded-lg">
-              <CpuIcon />
+              <Icon name="cpu" className="w-4 h-4 text-indigo-600" />
               <p className="font-semibold mt-2 text-slate-600">Aucune analyse disponible</p>
               <p className="mt-1 text-slate-400 max-w-xs">
                 Saisissez ou chargez une transcription à gauche puis cliquez sur "Lancer l'Analyse IA".
@@ -249,7 +225,9 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
               {/* Intervenants détectés (si présents) */}
               {analysisResult.speakers && analysisResult.speakers.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  <span className="font-bold text-slate-700">👥 Intervenants :</span>
+                  <span className="font-bold text-slate-700 inline-flex items-center gap-1">
+                    <Icon name="users" className="w-3.5 h-3.5" /> Intervenants :
+                  </span>
                   {analysisResult.speakers.map((s, idx) => (
                     <span key={idx} className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full text-[10px] font-medium border border-slate-200">
                       {s}
@@ -261,7 +239,7 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
               {/* Résumé */}
               <div className="bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-100 space-y-1">
                 <p className="font-bold text-indigo-950 flex items-center gap-1.5">
-                  📝 Résumé Synthétique :
+                  <Icon name="file-text" className="w-3.5 h-3.5" /> Résumé Synthétique :
                 </p>
                 <p className="text-indigo-900 leading-relaxed text-[11px]">
                   {analysisResult.summary}
@@ -270,7 +248,9 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
 
               {/* Décisions Clés */}
               <div className="space-y-1.5">
-                <p className="font-bold text-slate-800">🎯 Décisions Validées :</p>
+                <p className="font-bold text-slate-800 inline-flex items-center gap-1.5">
+                  <Icon name="target" className="w-3.5 h-3.5" /> Décisions Validées :
+                </p>
                 {analysisResult.decisions?.length > 0 ? (
                   <ul className="space-y-1 pl-1">
                     {analysisResult.decisions.map((d, i) => (
@@ -288,14 +268,14 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
               {/* Tâches Extraites */}
               <div className="space-y-2.5 pt-2 border-t border-slate-100">
                 <div className="flex justify-between items-center">
-                  <p className="font-bold text-slate-800">
-                    ☑️ Tâches Identifiées ({analysisResult.suggested_tasks?.length || 0})
+                  <p className="font-bold text-slate-800 inline-flex items-center gap-1.5">
+                    <Icon name="square-check-big" className="w-3.5 h-3.5" /> Tâches Identifiées ({analysisResult.suggested_tasks?.length || 0})
                   </p>
                   <button
                     onClick={handleSendToValidationModule}
                     className="text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer"
                   >
-                    <CheckCircleIcon /> Envoyer pour Validation
+                    <Icon name="circle-check" className="w-4 h-4" /> Envoyer pour Validation
                   </button>
                 </div>
 
@@ -325,11 +305,11 @@ Chef de service: Parfait. Sanaa, valide aussi les droits d'accès des médecins 
 
                       <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-slate-500 pt-1 border-t border-slate-200/60">
                         <div className="flex items-center gap-3">
-                          <span>
-                            👤 <strong className="text-slate-700">{t.assignee || 'Non assigné'}</strong>
+                          <span className="inline-flex items-center gap-1">
+                            <Icon name="user" className="w-3.5 h-3.5" /> <strong className="text-slate-700">{t.assignee || 'Non assigné'}</strong>
                           </span>
-                          <span>
-                            📅 <strong className="text-slate-700">{t.due_date || 'Non définie'}</strong>
+                          <span className="inline-flex items-center gap-1">
+                            <Icon name="calendar-days" className="w-3.5 h-3.5" /> <strong className="text-slate-700">{t.due_date || 'Non définie'}</strong>
                           </span>
                         </div>
 
